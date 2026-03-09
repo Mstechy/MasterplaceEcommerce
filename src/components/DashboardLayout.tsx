@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -173,6 +174,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex-1" />
+          <ThemeToggle />
           <Link to="/marketplace">
             <Button variant="outline" size="sm" className="gap-2 hover:bg-muted/50 transition-all">
               <Store className="h-4 w-4" /> Marketplace
