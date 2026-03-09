@@ -4,12 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Eye, EyeOff, ShoppingBag } from "lucide-react";
+import { Eye, EyeOff, ShoppingBag, ArrowRight, Shield, TrendingUp, Users, Quote } from "lucide-react";
+import GradientOrb from "@/components/GradientOrb";
 
 export default function LoginPage() {
-  const { signIn, loading } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,72 +26,130 @@ export default function LoginPage() {
       toast.error(error);
     } else {
       toast.success("Welcome back!");
-      // Navigation handled by auth state change + role redirect
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md animate-slide-up">
-        <div className="mb-8 text-center">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary">
+    <div className="flex min-h-screen">
+      {/* Left: Form */}
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 xl:px-24">
+        <div className="mx-auto w-full max-w-md animate-slide-up">
+          <Link to="/" className="inline-flex items-center gap-2.5 mb-12">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-glow">
               <ShoppingBag className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="font-display text-2xl font-bold text-foreground">MarketHub</span>
           </Link>
-        </div>
 
-        <Card className="border-border/60 shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="font-display text-2xl">Sign in to your account</CardTitle>
-            <CardDescription>Enter your credentials to continue</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+          <h1 className="font-display text-3xl font-bold text-foreground">Welcome back</h1>
+          <p className="mt-2 text-muted-foreground">Sign in to your account to continue</p>
+
+          <form onSubmit={handleSubmit} className="mt-10 space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <div className="relative">
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="h-12 pr-12"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+            </div>
+            <Button type="submit" className="w-full h-12 gradient-primary text-primary-foreground shadow-glow gap-2 text-base" disabled={submitting}>
+              {submitting ? "Signing in..." : <>Sign In <ArrowRight className="h-4 w-4" /></>}
+            </Button>
+          </form>
+
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link to="/auth/register" className="text-primary font-semibold hover:underline">
+              Create one
+            </Link>
+          </p>
+        </div>
+      </div>
+
+      {/* Right: Gradient panel */}
+      <div className="hidden lg:flex lg:flex-1 relative gradient-primary overflow-hidden items-center justify-center">
+        <GradientOrb color="accent" size="lg" className="top-10 -right-20 opacity-20" />
+        <GradientOrb color="seller" size="md" className="bottom-20 -left-10 opacity-15" />
+
+        <div className="relative z-10 max-w-md px-12 text-primary-foreground">
+          {/* Floating stat cards */}
+          <div className="space-y-4 mb-10">
+            <div className="glass-strong rounded-2xl p-4 bg-background/10 border-background/20 animate-float">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background/20">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium opacity-80">Revenue Growth</p>
+                  <p className="font-display text-xl font-bold">+247%</p>
                 </div>
               </div>
-              <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={submitting}>
-                {submitting ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/auth/register" className="text-primary font-medium hover:underline">
-                Create one
-              </Link>
+            </div>
+            <div className="glass-strong rounded-2xl p-4 bg-background/10 border-background/20 animate-float-slow ml-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background/20">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium opacity-80">Active Sellers</p>
+                  <p className="font-display text-xl font-bold">10,000+</p>
+                </div>
+              </div>
+            </div>
+            <div className="glass-strong rounded-2xl p-4 bg-background/10 border-background/20 animate-float ml-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background/20">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium opacity-80">Secure Escrow</p>
+                  <p className="font-display text-xl font-bold">$1M+ Protected</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Testimonial */}
+          <div className="glass-strong rounded-2xl p-6 bg-background/10 border-background/20">
+            <Quote className="h-6 w-6 opacity-40 mb-3" />
+            <p className="text-sm leading-relaxed opacity-90">
+              "MarketHub transformed my side hustle into a full-time business. The analytics and escrow system are game-changers."
             </p>
-          </CardContent>
-        </Card>
+            <div className="mt-4 flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-background/20 flex items-center justify-center text-xs font-bold">SC</div>
+              <div>
+                <p className="text-sm font-semibold">Sarah Chen</p>
+                <p className="text-xs opacity-70">Top Seller</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

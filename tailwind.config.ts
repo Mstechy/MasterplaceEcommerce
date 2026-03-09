@@ -81,6 +81,9 @@ export default {
       },
       boxShadow: {
         glow: "var(--shadow-glow)",
+        "glow-lg": "0 0 60px hsl(var(--primary) / 0.2)",
+        "glow-seller": "0 0 30px hsl(var(--seller) / 0.15)",
+        "glow-buyer": "0 0 30px hsl(var(--buyer) / 0.15)",
       },
       keyframes: {
         "accordion-down": {
@@ -91,10 +94,50 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        float: {
+          "0%, 100%": { transform: "translateY(0) scale(1)" },
+          "50%": { transform: "translateY(-20px) scale(1.02)" },
+        },
+        "float-slow": {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "33%": { transform: "translateY(-10px) rotate(1deg)" },
+          "66%": { transform: "translateY(-20px) rotate(-1deg)" },
+        },
+        blob: {
+          "0%, 100%": { borderRadius: "60% 40% 30% 70%/60% 30% 70% 40%" },
+          "50%": { borderRadius: "30% 60% 70% 40%/50% 60% 30% 60%" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { opacity: "0.4" },
+          "50%": { opacity: "0.8" },
+        },
+        "spin-slow": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "slide-up": {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "count-up": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        float: "float 6s ease-in-out infinite",
+        "float-slow": "float-slow 8s ease-in-out infinite",
+        blob: "blob 7s ease-in-out infinite",
+        shimmer: "shimmer 2s linear infinite",
+        "pulse-glow": "pulse-glow 3s ease-in-out infinite",
+        "spin-slow": "spin-slow 20s linear infinite",
+        "slide-up": "slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
       },
     },
   },
