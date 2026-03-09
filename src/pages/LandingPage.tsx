@@ -9,6 +9,7 @@ import {
   CheckCircle2, Lock, Star, Award, Headphones, TrendingUp, ShoppingCart,
   UserPlus, Search, CreditCard, Quote
 } from "lucide-react";
+import heroDashboard from "@/assets/hero-dashboard.png";
 
 const features = [
   { icon: Store, title: "Multi-Vendor Stores", desc: "Sellers get their own storefront with real-time analytics and inventory management" },
@@ -141,6 +142,19 @@ export default function LandingPage() {
               </div>
             </AnimatedSection>
           </div>
+
+          {/* Hero dashboard image */}
+          <AnimatedSection variant="fade-up" delay={500} className="mt-16 max-w-6xl mx-auto">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border/30">
+              <img
+                src={heroDashboard}
+                alt="MarketHub dashboard showing analytics, product management and sales data"
+                className="w-full h-auto"
+                loading="eager"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent pointer-events-none" />
+            </div>
+          </AnimatedSection>
         </div>
       </section>
 
