@@ -10,7 +10,7 @@ const pageVariants = {
 
 const pageTransition = {
   type: "tween" as const,
-  ease: [0.16, 1, 0.3, 1],
+  ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
   duration: 0.4,
 };
 
