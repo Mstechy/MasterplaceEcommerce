@@ -2,11 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import RoleRedirect from "@/components/RoleRedirect";
+import PageTransition from "@/components/PageTransition";
 
 // Pages
 import LandingPage from "@/pages/LandingPage";
@@ -63,6 +64,47 @@ function BuyerRoute({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AppRoutes() {
+  return (
+    <PageTransition>
+      <Routes>
+        {/* Public */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/marketplace" element={<MarketplacePage />} />
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/register" element={<RegisterPage />} />
+
+        {/* Role redirect */}
+        <Route path="/dashboard" element={<RoleRedirect />} />
+
+        {/* Admin */}
+        <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/sellers" element={<AdminRoute><AdminSellers /></AdminRoute>} />
+        <Route path="/admin/ads" element={<AdminRoute><AdminAds /></AdminRoute>} />
+        <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+        <Route path="/admin/disputes" element={<AdminRoute><AdminDisputes /></AdminRoute>} />
+
+        {/* Seller */}
+        <Route path="/seller/dashboard" element={<SellerRoute><SellerDashboard /></SellerRoute>} />
+        <Route path="/seller/products" element={<SellerRoute><SellerProducts /></SellerRoute>} />
+        <Route path="/seller/orders" element={<SellerRoute><SellerOrders /></SellerRoute>} />
+        <Route path="/seller/ads" element={<SellerRoute><SellerAds /></SellerRoute>} />
+        <Route path="/seller/wallet" element={<SellerRoute><SellerWallet /></SellerRoute>} />
+        <Route path="/seller/chat" element={<SellerRoute><SellerChat /></SellerRoute>} />
+
+        {/* Buyer */}
+        <Route path="/buyer/dashboard" element={<BuyerRoute><BuyerDashboard /></BuyerRoute>} />
+        <Route path="/buyer/orders" element={<BuyerRoute><BuyerOrders /></BuyerRoute>} />
+        <Route path="/buyer/tracking" element={<BuyerRoute><BuyerTracking /></BuyerRoute>} />
+        <Route path="/buyer/chat" element={<BuyerRoute><BuyerChat /></BuyerRoute>} />
+        <Route path="/buyer/reports" element={<BuyerRoute><BuyerReports /></BuyerRoute>} />
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </PageTransition>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -70,40 +112,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Public */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/marketplace" element={<MarketplacePage />} />
-            <Route path="/auth/login" element={<LoginPage />} />
-            <Route path="/auth/register" element={<RegisterPage />} />
-
-            {/* Role redirect */}
-            <Route path="/dashboard" element={<RoleRedirect />} />
-
-            {/* Admin */}
-            <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-            <Route path="/admin/sellers" element={<AdminRoute><AdminSellers /></AdminRoute>} />
-            <Route path="/admin/ads" element={<AdminRoute><AdminAds /></AdminRoute>} />
-            <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
-            <Route path="/admin/disputes" element={<AdminRoute><AdminDisputes /></AdminRoute>} />
-
-            {/* Seller */}
-            <Route path="/seller/dashboard" element={<SellerRoute><SellerDashboard /></SellerRoute>} />
-            <Route path="/seller/products" element={<SellerRoute><SellerProducts /></SellerRoute>} />
-            <Route path="/seller/orders" element={<SellerRoute><SellerOrders /></SellerRoute>} />
-            <Route path="/seller/ads" element={<SellerRoute><SellerAds /></SellerRoute>} />
-            <Route path="/seller/wallet" element={<SellerRoute><SellerWallet /></SellerRoute>} />
-            <Route path="/seller/chat" element={<SellerRoute><SellerChat /></SellerRoute>} />
-
-            {/* Buyer */}
-            <Route path="/buyer/dashboard" element={<BuyerRoute><BuyerDashboard /></BuyerRoute>} />
-            <Route path="/buyer/orders" element={<BuyerRoute><BuyerOrders /></BuyerRoute>} />
-            <Route path="/buyer/tracking" element={<BuyerRoute><BuyerTracking /></BuyerRoute>} />
-            <Route path="/buyer/chat" element={<BuyerRoute><BuyerChat /></BuyerRoute>} />
-            <Route path="/buyer/reports" element={<BuyerRoute><BuyerReports /></BuyerRoute>} />
-
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
