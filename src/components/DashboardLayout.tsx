@@ -81,16 +81,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
+        {/* Gradient accent line at top */}
+        <div className={`h-0.5 w-full ${roleGradient}`} />
+
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center justify-between border-b border-border px-4">
-            <Link to="/" className="flex items-center gap-2">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${roleGradient}`}>
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${roleGradient} transition-transform group-hover:scale-110`}>
                 <ShoppingBag className="h-4 w-4 text-primary-foreground" />
               </div>
               <span className="font-display text-lg font-bold text-foreground">MarketHub</span>
             </Link>
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-muted-foreground">
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-muted-foreground hover:text-foreground transition-colors">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -114,13 +117,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   key={item.href}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     isActive
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground hover:translate-x-0.5"
                   }`}
                 >
-                  <item.icon className="h-4 w-4" />
+                  {isActive && <div className={`absolute left-0 h-6 w-0.5 rounded-r ${roleGradient}`} />}
+                  <item.icon className={`h-4 w-4 transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-primary" : ""}`} />
                   {item.label}
                 </Link>
               );
@@ -131,9 +135,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="border-t border-border p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-muted transition-colors">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                    <User className="h-4 w-4 text-muted-foreground" />
+                <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-muted transition-all duration-200 group">
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full ${roleGradient} transition-transform group-hover:scale-105`}>
+                    <User className="h-4 w-4 text-primary-foreground" />
                   </div>
                   <div className="flex-1 text-left">
                     <p className="text-sm font-medium text-foreground truncate">{profile?.full_name || "User"}</p>
@@ -158,19 +162,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Overlay for mobile */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Main content */}
       <div className="flex flex-1 flex-col">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-sm lg:px-6">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-foreground">
+        {/* Top bar with glass effect */}
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/60 glass-strong px-4 lg:px-6">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-foreground hover:text-primary transition-colors">
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex-1" />
           <Link to="/marketplace">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="gap-2 hover:bg-muted/50 transition-all">
               <Store className="h-4 w-4" /> Marketplace
             </Button>
           </Link>
