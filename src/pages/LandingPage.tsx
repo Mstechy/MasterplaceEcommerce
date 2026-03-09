@@ -9,6 +9,7 @@ import {
   CheckCircle2, Lock, Star, Award, Headphones, TrendingUp, ShoppingCart,
   UserPlus, Search, CreditCard, Quote
 } from "lucide-react";
+import heroDashboard from "@/assets/hero-dashboard.png";
 
 const features = [
   { icon: Store, title: "Multi-Vendor Stores", desc: "Sellers get their own storefront with real-time analytics and inventory management" },
