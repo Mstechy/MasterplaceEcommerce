@@ -6,6 +6,13 @@ import { useAuth } from "@/hooks/useAuth";
 import AnimatedSection from "@/components/AnimatedSection";
 import GradientOrb from "@/components/GradientOrb";
 
+import productHeadphones from "@/assets/product-headphones.jpg";
+import productWallet from "@/assets/product-wallet.jpg";
+import productTshirt from "@/assets/product-tshirt.jpg";
+import productTracker from "@/assets/product-tracker.jpg";
+import productCoffee from "@/assets/product-coffee.jpg";
+import productLamp from "@/assets/product-lamp.jpg";
+
 const categories = [
   { label: "All", icon: Tag, active: true },
   { label: "Electronics", icon: Laptop },
@@ -17,12 +24,12 @@ const categories = [
 ];
 
 const placeholderProducts = [
-  { name: "Premium Wireless Headphones", price: "$129.99", seller: "TechStore", rating: 4.8 },
-  { name: "Handcrafted Leather Wallet", price: "$59.99", seller: "CraftHouse", rating: 4.9 },
-  { name: "Organic Cotton T-Shirt", price: "$34.99", seller: "EcoWear", rating: 4.7 },
-  { name: "Smart Fitness Tracker", price: "$89.99", seller: "FitTech", rating: 4.6 },
-  { name: "Artisan Coffee Beans", price: "$24.99", seller: "BeanCo", rating: 4.9 },
-  { name: "Minimalist Desk Lamp", price: "$79.99", seller: "LightCraft", rating: 4.8 },
+  { name: "Premium Wireless Headphones", price: "$129.99", seller: "TechStore", rating: 4.8, image: productHeadphones },
+  { name: "Handcrafted Leather Wallet", price: "$59.99", seller: "CraftHouse", rating: 4.9, image: productWallet },
+  { name: "Organic Cotton T-Shirt", price: "$34.99", seller: "EcoWear", rating: 4.7, image: productTshirt },
+  { name: "Smart Fitness Tracker", price: "$89.99", seller: "FitTech", rating: 4.6, image: productTracker },
+  { name: "Artisan Coffee Beans", price: "$24.99", seller: "BeanCo", rating: 4.9, image: productCoffee },
+  { name: "Minimalist Desk Lamp", price: "$79.99", seller: "LightCraft", rating: 4.8, image: productLamp },
 ];
 
 export default function MarketplacePage() {
@@ -118,12 +125,14 @@ export default function MarketplacePage() {
           {placeholderProducts.map((product, i) => (
             <AnimatedSection key={product.name} variant="fade-up" delay={i * 80}>
               <div className="group rounded-2xl border border-border/60 bg-card overflow-hidden card-hover cursor-pointer">
-                {/* Image placeholder */}
+                {/* Product image */}
                 <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <ShoppingBag className="h-12 w-12 text-muted-foreground/30" />
-                  </div>
-                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
                 </div>
                 <div className="p-5">
                   <div className="flex items-center gap-2 mb-2">
@@ -146,11 +155,11 @@ export default function MarketplacePage() {
           ))}
         </div>
 
-        {/* Empty state note */}
+        {/* CTA */}
         <AnimatedSection variant="fade-up" delay={400}>
           <div className="mt-12 text-center py-8">
             <p className="text-sm text-muted-foreground">
-              These are placeholder products. Real products will appear as sellers list them.
+              These are sample products. Real products will appear as sellers list them.
             </p>
             <Link to="/auth/register" className="inline-block mt-4">
               <Button variant="outline" className="gap-2">
