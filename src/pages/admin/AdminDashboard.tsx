@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, DollarSign, ShoppingCart, AlertTriangle, TrendingUp, Store, Megaphone, BarChart3, Shield } from "lucide-react";
+import { Users, DollarSign, ShoppingCart, AlertTriangle, TrendingUp, Store, Megaphone, BarChart3, Shield, ArrowRight } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const stats = [
   { label: "Total Revenue", value: "$0.00", icon: DollarSign, change: "+0% from last month", cardClass: "stat-card" },
@@ -24,18 +25,22 @@ const revenueData = [
 ];
 
 const quickActions = [
-  { label: "Manage Sellers", icon: Users, href: "/admin/sellers", gradient: "gradient-seller" },
-  { label: "View Disputes", icon: AlertTriangle, href: "/admin/disputes", gradient: "gradient-primary" },
-  { label: "Manage Ads", icon: Megaphone, href: "/admin/ads", gradient: "gradient-buyer" },
-  { label: "Analytics", icon: BarChart3, href: "/admin/analytics", gradient: "gradient-admin" },
+  { label: "Manage Sellers", icon: Users, href: "/admin/sellers", gradient: "gradient-seller", desc: "View & moderate" },
+  { label: "View Disputes", icon: AlertTriangle, href: "/admin/disputes", gradient: "gradient-primary", desc: "Resolve issues" },
+  { label: "Manage Ads", icon: Megaphone, href: "/admin/ads", gradient: "gradient-buyer", desc: "Platform revenue" },
+  { label: "Analytics", icon: BarChart3, href: "/admin/analytics", gradient: "gradient-admin", desc: "Full insights" },
 ];
 
 export default function AdminDashboard() {
+  const { profile } = useAuth();
+
   return (
     <div className="space-y-8">
       <AnimatedSection variant="fade-up">
         <div>
-          <h1 className="font-display text-3xl font-bold text-foreground">Admin Dashboard</h1>
+          <h1 className="font-display text-3xl font-bold text-foreground">
+            {profile?.full_name ? `Welcome, ${profile.full_name.split(' ')[0]}` : 'Admin Dashboard'}
+          </h1>
           <p className="mt-1 text-muted-foreground">Platform overview and management</p>
         </div>
       </AnimatedSection>
@@ -96,14 +101,17 @@ export default function AdminDashboard() {
         <AnimatedSection variant="fade-up" delay={200}>
           <Card className="border-border/60 h-full">
             <CardHeader><CardTitle className="font-display">Quick Actions</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {quickActions.map((action) => (
                 <Link key={action.label} to={action.href}>
-                  <Button variant="outline" className="w-full justify-start gap-3 h-12 hover:bg-muted/50 mb-2">
+                  <Button variant="outline" className="w-full justify-start gap-3 h-12 hover:bg-muted/50 mb-1">
                     <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${action.gradient}`}>
                       <action.icon className="h-4 w-4 text-primary-foreground" />
                     </div>
-                    <span className="font-medium">{action.label}</span>
+                    <div className="text-left">
+                      <span className="font-medium text-sm">{action.label}</span>
+                      <p className="text-xs text-muted-foreground">{action.desc}</p>
+                    </div>
                   </Button>
                 </Link>
               ))}
@@ -115,7 +123,9 @@ export default function AdminDashboard() {
       {/* Activity feed */}
       <AnimatedSection variant="fade-up" delay={300}>
         <Card className="border-border/60">
-          <CardHeader><CardTitle className="font-display">Recent Activity</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-display">Recent Activity</CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4">

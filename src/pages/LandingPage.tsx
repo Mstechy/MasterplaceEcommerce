@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +10,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import {
   ShoppingBag, ArrowRight, Shield, Store, Zap, Users, Globe, BarChart3,
   CheckCircle2, Lock, Star, Award, Headphones, TrendingUp, ShoppingCart,
-  UserPlus, Search, CreditCard, Quote
+  UserPlus, Search, CreditCard, Quote, Menu, X
 } from "lucide-react";
 import heroDashboard from "@/assets/hero-dashboard.png";
 import heroSlide1 from "@/assets/hero-slide-1.jpg";
@@ -74,11 +75,12 @@ const trustBadges = [
 
 export default function LandingPage() {
   const { user, role } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dashboardPath = role === "admin" ? "/admin/dashboard" : role === "seller" ? "/seller/dashboard" : "/buyer/dashboard";
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
-      {/* Nav - transparent overlay on hero */}
+      {/* Nav */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/20">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
@@ -97,20 +99,56 @@ export default function LandingPage() {
             <ThemeToggle />
             {user ? (
               <Link to={dashboardPath}>
-                <Button className="gap-2 gradient-primary text-primary-foreground shadow-glow">
+                <Button className="gap-2 gradient-primary text-primary-foreground shadow-glow hidden sm:inline-flex">
                   Dashboard <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             ) : (
-              <>
+              <div className="hidden sm:flex items-center gap-2">
                 <Link to="/auth/login"><Button variant="ghost" size="sm" className="text-muted-foreground">Sign In</Button></Link>
                 <Link to="/auth/register">
                   <Button size="sm" className="gradient-primary text-primary-foreground shadow-glow">Get Started</Button>
                 </Link>
-              </>
+              </div>
             )}
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden text-foreground hover:text-primary transition-colors p-1"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border/20 bg-background/95 backdrop-blur-xl animate-slide-up">
+            <div className="container py-4 space-y-3">
+              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
+              <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
+              <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
+              <Link to="/marketplace" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Marketplace</Link>
+              <div className="pt-3 border-t border-border/20 flex flex-col gap-2">
+                {user ? (
+                  <Link to={dashboardPath} onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="w-full gap-2 gradient-primary text-primary-foreground">Dashboard <ArrowRight className="h-4 w-4" /></Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/auth/login" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full">Sign In</Button>
+                    </Link>
+                    <Link to="/auth/register" onClick={() => setMobileMenuOpen(false)}>
+                      <Button className="w-full gradient-primary text-primary-foreground">Get Started</Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Slider */}
@@ -127,7 +165,7 @@ export default function LandingPage() {
             </Button>
           </Link>
         </div>
-        <div className="mt-8 flex flex-wrap items-center gap-6 text-sm text-primary-foreground/70">
+        <div className="mt-8 hidden sm:flex flex-wrap items-center gap-6 text-sm text-primary-foreground/70">
           {trustBadges.map((b) => (
             <div key={b.label} className="flex items-center gap-2">
               <b.icon className="h-4 w-4" />
@@ -365,7 +403,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border/40 bg-card py-16">
         <div className="container">
-          <div className="grid gap-8 md:grid-cols-4">
+          <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
             <div>
               <Link to="/" className="flex items-center gap-2 mb-4">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">

@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Package, ShoppingCart, Eye, Plus, BarChart3, Megaphone, Wallet } from "lucide-react";
+import { DollarSign, Package, ShoppingCart, Eye, Plus, BarChart3, Megaphone, Wallet, ArrowRight, TrendingUp } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const stats = [
   { label: "Today's Sales", value: "$0.00", icon: DollarSign, change: "+0% from yesterday", cardClass: "stat-card stat-card-seller" },
@@ -23,18 +24,22 @@ const revenueData = [
 ];
 
 const quickActions = [
-  { label: "Add Product", icon: Plus, href: "/seller/products", gradient: "gradient-seller" },
-  { label: "View Orders", icon: ShoppingCart, href: "/seller/orders", gradient: "gradient-primary" },
-  { label: "Run Ad", icon: Megaphone, href: "/seller/ads", gradient: "gradient-buyer" },
-  { label: "Withdraw", icon: Wallet, href: "/seller/wallet", gradient: "gradient-admin" },
+  { label: "Add Product", icon: Plus, href: "/seller/products", gradient: "gradient-seller", desc: "List new item" },
+  { label: "View Orders", icon: ShoppingCart, href: "/seller/orders", gradient: "gradient-primary", desc: "Manage orders" },
+  { label: "Run Ad", icon: Megaphone, href: "/seller/ads", gradient: "gradient-buyer", desc: "Boost visibility" },
+  { label: "Withdraw", icon: Wallet, href: "/seller/wallet", gradient: "gradient-admin", desc: "Cash out earnings" },
 ];
 
 export default function SellerDashboard() {
+  const { profile } = useAuth();
+
   return (
     <div className="space-y-8">
       <AnimatedSection variant="fade-up">
         <div>
-          <h1 className="font-display text-3xl font-bold text-foreground">Seller Dashboard</h1>
+          <h1 className="font-display text-3xl font-bold text-foreground">
+            {profile?.full_name ? `Welcome, ${profile.full_name.split(' ')[0]}` : 'Seller Dashboard'}
+          </h1>
           <p className="mt-1 text-muted-foreground">Your store performance at a glance</p>
         </div>
       </AnimatedSection>
@@ -95,14 +100,17 @@ export default function SellerDashboard() {
         <AnimatedSection variant="fade-up" delay={200}>
           <Card className="border-border/60 h-full">
             <CardHeader><CardTitle className="font-display">Quick Actions</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {quickActions.map((action) => (
                 <Link key={action.label} to={action.href}>
-                  <Button variant="outline" className="w-full justify-start gap-3 h-12 hover:bg-muted/50 mb-2">
+                  <Button variant="outline" className="w-full justify-start gap-3 h-12 hover:bg-muted/50 mb-1">
                     <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${action.gradient}`}>
                       <action.icon className="h-4 w-4 text-primary-foreground" />
                     </div>
-                    <span className="font-medium">{action.label}</span>
+                    <div className="text-left">
+                      <span className="font-medium text-sm">{action.label}</span>
+                      <p className="text-xs text-muted-foreground">{action.desc}</p>
+                    </div>
                   </Button>
                 </Link>
               ))}
@@ -111,10 +119,15 @@ export default function SellerDashboard() {
         </AnimatedSection>
       </div>
 
-      {/* Recent orders placeholder */}
+      {/* Recent orders */}
       <AnimatedSection variant="fade-up" delay={300}>
         <Card className="border-border/60">
-          <CardHeader><CardTitle className="font-display">Recent Orders</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-display">Recent Orders</CardTitle>
+            <Link to="/seller/orders">
+              <Button variant="ghost" size="sm" className="text-muted-foreground gap-1">View All <ArrowRight className="h-3 w-3" /></Button>
+            </Link>
+          </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4">

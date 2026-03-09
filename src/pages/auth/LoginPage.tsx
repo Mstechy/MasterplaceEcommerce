@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,24 @@ import { Eye, EyeOff, ShoppingBag, ArrowRight, Shield, TrendingUp, Users, Quote 
 import GradientOrb from "@/components/GradientOrb";
 
 export default function LoginPage() {
-  const { signIn } = useAuth();
+  const { user, role, signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && role) {
+      const dashboardMap: Record<string, string> = {
+        admin: "/admin/dashboard",
+        seller: "/seller/dashboard",
+        buyer: "/buyer/dashboard",
+      };
+      navigate(dashboardMap[role] || "/marketplace", { replace: true });
+    }
+  }, [user, role, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +38,7 @@ export default function LoginPage() {
       toast.error(error);
     } else {
       toast.success("Welcome back!");
+      // Navigation handled by useEffect when user/role state updates
     }
   };
 
@@ -98,7 +111,6 @@ export default function LoginPage() {
         <GradientOrb color="seller" size="md" className="bottom-20 -left-10 opacity-15" />
 
         <div className="relative z-10 max-w-md px-12 text-primary-foreground">
-          {/* Floating stat cards */}
           <div className="space-y-4 mb-10">
             <div className="glass-strong rounded-2xl p-4 bg-background/10 border-background/20 animate-float">
               <div className="flex items-center gap-3">
@@ -135,7 +147,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Testimonial */}
           <div className="glass-strong rounded-2xl p-6 bg-background/10 border-background/20">
             <Quote className="h-6 w-6 opacity-40 mb-3" />
             <p className="text-sm leading-relaxed opacity-90">
