@@ -1,27 +1,43 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Truck, DollarSign, Star, Search, MessageSquare, Package, Flag, ArrowRight, Shield, Clock } from "lucide-react";
+import { ShoppingCart, Truck, DollarSign, Search, MessageSquare, Package, Flag, ArrowRight, Shield, Star, Clock } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-
-const stats = [
-  { label: "Active Orders", value: "0", icon: ShoppingCart, change: "No active orders", cardClass: "stat-card stat-card-buyer" },
-  { label: "In Transit", value: "0", icon: Truck, change: "No deliveries", cardClass: "stat-card stat-card-seller" },
-  { label: "Total Spent", value: "$0.00", icon: DollarSign, change: "Lifetime spend", cardClass: "stat-card" },
-  { label: "Reviews Given", value: "0", icon: Star, change: "Help the community", cardClass: "stat-card stat-card-accent" },
-];
-
-const quickActions = [
-  { label: "Browse Marketplace", icon: Search, href: "/marketplace", gradient: "gradient-buyer", desc: "Discover products" },
-  { label: "Track Orders", icon: Truck, href: "/buyer/tracking", gradient: "gradient-seller", desc: "Real-time tracking" },
-  { label: "My Orders", icon: Package, href: "/buyer/orders", gradient: "gradient-primary", desc: "Order history" },
-  { label: "Messages", icon: MessageSquare, href: "/buyer/chat", gradient: "gradient-admin", desc: "Chat with sellers" },
-  { label: "Report Issue", icon: Flag, href: "/buyer/reports", gradient: "gradient-primary", desc: "File a complaint" },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export default function BuyerDashboard() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
+  const [stats, setStats] = useState({ activeOrders: 0, inTransit: 0, totalSpent: 0 });
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchStats = async () => {
+      const { data: orders } = await supabase.from("orders").select("status, total_amount").eq("buyer_id", user.id);
+      if (orders) {
+        const active = orders.filter(o => o.status !== "delivered" && o.status !== "cancelled").length;
+        const transit = orders.filter(o => o.status === "shipped").length;
+        const spent = orders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+        setStats({ activeOrders: active, inTransit: transit, totalSpent: spent });
+      }
+    };
+    fetchStats();
+  }, [user]);
+
+  const statCards = [
+    { label: "Active Orders", value: String(stats.activeOrders), icon: ShoppingCart, cardClass: "stat-card stat-card-buyer" },
+    { label: "In Transit", value: String(stats.inTransit), icon: Truck, cardClass: "stat-card stat-card-seller" },
+    { label: "Total Spent", value: `$${stats.totalSpent.toFixed(2)}`, icon: DollarSign, cardClass: "stat-card" },
+  ];
+
+  const quickActions = [
+    { label: "Browse Marketplace", icon: Search, href: "/marketplace", gradient: "gradient-buyer", desc: "Discover products" },
+    { label: "Track Orders", icon: Truck, href: "/buyer/tracking", gradient: "gradient-seller", desc: "Real-time tracking" },
+    { label: "My Orders", icon: Package, href: "/buyer/orders", gradient: "gradient-primary", desc: "Order history" },
+    { label: "Messages", icon: MessageSquare, href: "/buyer/chat", gradient: "gradient-admin", desc: "Chat with sellers" },
+    { label: "Report Issue", icon: Flag, href: "/buyer/reports", gradient: "gradient-primary", desc: "File a complaint" },
+  ];
 
   return (
     <div className="space-y-8">
@@ -41,9 +57,8 @@ export default function BuyerDashboard() {
         </div>
       </AnimatedSection>
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, i) => (
+      <div className="grid gap-4 sm:grid-cols-3">
+        {statCards.map((stat, i) => (
           <AnimatedSection key={stat.label} variant="fade-up" delay={i * 80}>
             <div className={stat.cardClass}>
               <div className="flex items-center justify-between mb-3">
@@ -53,15 +68,13 @@ export default function BuyerDashboard() {
                 </div>
               </div>
               <p className="font-display text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{stat.change}</p>
             </div>
           </AnimatedSection>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent orders */}
-        <AnimatedSection variant="fade-up" delay={100} className="lg:col-span-2">
+        <AnimatedSection variant="fade-up" delay={200} className="lg:col-span-2">
           <Card className="border-border/60 h-full">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="font-display">Recent Orders</CardTitle>
@@ -76,18 +89,13 @@ export default function BuyerDashboard() {
                 </div>
                 <p className="font-display font-semibold text-foreground">No orders yet</p>
                 <p className="mt-1 text-sm text-muted-foreground max-w-xs">Start shopping in the marketplace to see your orders here</p>
-                <Link to="/marketplace" className="mt-4">
-                  <Button variant="outline" className="gap-2">
-                    <Search className="h-4 w-4" /> Browse Products
-                  </Button>
-                </Link>
+                <Link to="/marketplace" className="mt-4"><Button variant="outline" className="gap-2"><Search className="h-4 w-4" /> Browse Products</Button></Link>
               </div>
             </CardContent>
           </Card>
         </AnimatedSection>
 
-        {/* Quick actions */}
-        <AnimatedSection variant="fade-up" delay={200}>
+        <AnimatedSection variant="fade-up" delay={300}>
           <Card className="border-border/60 h-full">
             <CardHeader><CardTitle className="font-display">Quick Actions</CardTitle></CardHeader>
             <CardContent className="space-y-2">
@@ -109,22 +117,12 @@ export default function BuyerDashboard() {
         </AnimatedSection>
       </div>
 
-      {/* Trust section */}
-      <AnimatedSection variant="fade-up" delay={300}>
+      <AnimatedSection variant="fade-up" delay={400}>
         <div className="rounded-2xl border border-border/60 bg-card p-6">
           <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-accent" />
-              <span>Escrow Protected Payments</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-seller" />
-              <span>Verified Sellers Only</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <span>24/7 Dispute Resolution</span>
-            </div>
+            <div className="flex items-center gap-2"><Shield className="h-5 w-5 text-accent" /><span>Escrow Protected Payments</span></div>
+            <div className="flex items-center gap-2"><Star className="h-5 w-5 text-seller" /><span>Verified Sellers Only</span></div>
+            <div className="flex items-center gap-2"><Clock className="h-5 w-5 text-primary" /><span>24/7 Dispute Resolution</span></div>
           </div>
         </div>
       </AnimatedSection>

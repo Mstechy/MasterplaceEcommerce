@@ -1,16 +1,53 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Megaphone, Plus, BarChart3, Eye, MousePointer, DollarSign, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Megaphone, Plus, Eye, MousePointer, DollarSign, TrendingUp } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
-const adStats = [
-  { label: "Active Campaigns", value: "0", icon: Megaphone, gradient: "gradient-seller" },
-  { label: "Total Impressions", value: "0", icon: Eye, gradient: "gradient-primary" },
-  { label: "Total Clicks", value: "0", icon: MousePointer, gradient: "gradient-buyer" },
-  { label: "Ad Spend", value: "$0.00", icon: DollarSign, gradient: "gradient-admin" },
-];
+interface Ad {
+  id: string;
+  title: string;
+  placement: string;
+  status: string;
+  impressions: number;
+  clicks: number;
+  budget: number;
+  spent: number;
+  start_date: string | null;
+  end_date: string | null;
+}
 
 export default function SellerAds() {
+  const { user } = useAuth();
+  const [ads, setAds] = useState<Ad[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("ads").select("*").eq("seller_id", user.id).order("created_at", { ascending: false })
+      .then(({ data }) => { if (data) setAds(data as Ad[]); setLoading(false); });
+  }, [user]);
+
+  const totalImpressions = ads.reduce((s, a) => s + a.impressions, 0);
+  const totalClicks = ads.reduce((s, a) => s + a.clicks, 0);
+  const totalSpent = ads.reduce((s, a) => s + Number(a.spent), 0);
+
+  const adStats = [
+    { label: "Active Campaigns", value: String(ads.filter(a => a.status === "active").length), icon: Megaphone, gradient: "gradient-seller" },
+    { label: "Total Impressions", value: String(totalImpressions), icon: Eye, gradient: "gradient-primary" },
+    { label: "Total Clicks", value: String(totalClicks), icon: MousePointer, gradient: "gradient-buyer" },
+    { label: "Ad Spend", value: `$${totalSpent.toFixed(2)}`, icon: DollarSign, gradient: "gradient-admin" },
+  ];
+
+  const statusColors: Record<string, string> = {
+    active: "bg-accent/10 text-accent",
+    paused: "bg-yellow-500/10 text-yellow-600",
+    ended: "bg-muted text-muted-foreground",
+  };
+
   return (
     <div className="space-y-6">
       <AnimatedSection variant="fade-up">
@@ -25,7 +62,6 @@ export default function SellerAds() {
         </div>
       </AnimatedSection>
 
-      {/* Ad stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {adStats.map((stat, i) => (
           <AnimatedSection key={stat.label} variant="fade-up" delay={i * 60}>
@@ -42,24 +78,44 @@ export default function SellerAds() {
         ))}
       </div>
 
-      {/* Empty state */}
       <AnimatedSection variant="fade-up" delay={200}>
-        <Card className="border-border/60">
-          <CardContent className="py-16">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-muted mb-5">
-                <TrendingUp className="h-9 w-9 text-muted-foreground" />
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        ) : ads.length === 0 ? (
+          <Card className="border-border/60">
+            <CardContent className="py-16">
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-muted mb-5">
+                  <TrendingUp className="h-9 w-9 text-muted-foreground" />
+                </div>
+                <h3 className="font-display text-xl font-semibold text-foreground">No ad campaigns yet</h3>
+                <p className="mt-2 text-sm text-muted-foreground max-w-sm">Create your first ad campaign to increase product visibility and drive more sales.</p>
+                <Button className="mt-6 gap-2 gradient-seller text-primary-foreground shadow-glow-seller">
+                  <Plus className="h-4 w-4" /> Create Your First Campaign
+                </Button>
               </div>
-              <h3 className="font-display text-xl font-semibold text-foreground">No ad campaigns yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-                Create your first ad campaign to increase product visibility and drive more sales. Target buyers based on interests and browsing history.
-              </p>
-              <Button className="mt-6 gap-2 gradient-seller text-primary-foreground shadow-glow-seller">
-                <Plus className="h-4 w-4" /> Create Your First Campaign
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {ads.map(ad => (
+              <Card key={ad.id} className="border-border/60">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <p className="font-display font-semibold text-foreground">{ad.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{ad.placement} • {ad.impressions} impressions • {ad.clicks} clicks</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">${Number(ad.spent).toFixed(2)} / ${Number(ad.budget).toFixed(2)}</span>
+                      <Badge className={statusColors[ad.status] || ""}>{ad.status}</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </AnimatedSection>
     </div>
   );
