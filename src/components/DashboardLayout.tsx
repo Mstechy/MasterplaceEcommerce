@@ -174,6 +174,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex-1" />
+          <ThemeToggle />
           <Link to="/marketplace">
             <Button variant="outline" size="sm" className="gap-2 hover:bg-muted/50 transition-all">
               <Store className="h-4 w-4" /> Marketplace
