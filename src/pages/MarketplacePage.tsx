@@ -5,6 +5,7 @@ import { ShoppingBag, Search, SlidersHorizontal, Star, Shield, ArrowRight, Store
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedSection from "@/components/AnimatedSection";
 import GradientOrb from "@/components/GradientOrb";
+import ThemeToggle from "@/components/ThemeToggle";
 
 import productHeadphones from "@/assets/product-headphones.jpg";
 import productWallet from "@/assets/product-wallet.jpg";
@@ -24,12 +25,12 @@ const categories = [
 ];
 
 const placeholderProducts = [
-  { name: "Premium Wireless Headphones", price: "$129.99", seller: "TechStore", rating: 4.8, image: productHeadphones },
-  { name: "Handcrafted Leather Wallet", price: "$59.99", seller: "CraftHouse", rating: 4.9, image: productWallet },
-  { name: "Organic Cotton T-Shirt", price: "$34.99", seller: "EcoWear", rating: 4.7, image: productTshirt },
-  { name: "Smart Fitness Tracker", price: "$89.99", seller: "FitTech", rating: 4.6, image: productTracker },
-  { name: "Artisan Coffee Beans", price: "$24.99", seller: "BeanCo", rating: 4.9, image: productCoffee },
-  { name: "Minimalist Desk Lamp", price: "$79.99", seller: "LightCraft", rating: 4.8, image: productLamp },
+  { name: "Premium Wireless Headphones", price: "$129.99", seller: "TechStore", rating: 4.8, image: productHeadphones, verified: true },
+  { name: "Handcrafted Leather Wallet", price: "$59.99", seller: "CraftHouse", rating: 4.9, image: productWallet, verified: true },
+  { name: "Organic Cotton T-Shirt", price: "$34.99", seller: "EcoWear", rating: 4.7, image: productTshirt, verified: false },
+  { name: "Smart Fitness Tracker", price: "$89.99", seller: "FitTech", rating: 4.6, image: productTracker, verified: true },
+  { name: "Artisan Coffee Beans", price: "$24.99", seller: "BeanCo", rating: 4.9, image: productCoffee, verified: true },
+  { name: "Minimalist Desk Lamp", price: "$79.99", seller: "LightCraft", rating: 4.8, image: productLamp, verified: false },
 ];
 
 export default function MarketplacePage() {
@@ -40,15 +41,15 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="container flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
+        <div className="container flex h-16 items-center justify-between gap-4">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary shadow-glow">
               <ShoppingBag className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-display text-lg font-bold text-foreground">MarketHub</span>
+            <span className="font-display text-lg font-bold text-foreground hidden sm:block">MarketHub</span>
           </Link>
 
-          <div className="hidden md:flex flex-1 max-w-xl mx-8">
+          <div className="flex flex-1 max-w-xl">
             <div className="relative w-full">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search products, sellers, categories..." className="pl-10 pr-10 h-11 rounded-xl" />
@@ -58,14 +59,15 @@ export default function MarketplacePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle />
             {user ? (
               <Link to={dashboardPath}>
                 <Button variant="outline" size="sm" className="gap-2">Dashboard</Button>
               </Link>
             ) : (
               <>
-                <Link to="/auth/login"><Button variant="ghost" size="sm">Sign In</Button></Link>
+                <Link to="/auth/login"><Button variant="ghost" size="sm" className="hidden sm:inline-flex">Sign In</Button></Link>
                 <Link to="/auth/register"><Button size="sm" className="gradient-primary text-primary-foreground">Sign Up</Button></Link>
               </>
             )}
@@ -93,14 +95,6 @@ export default function MarketplacePage() {
           </div>
         </AnimatedSection>
 
-        {/* Mobile search */}
-        <div className="mb-6 md:hidden">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search products..." className="pl-10 h-11 rounded-xl" />
-          </div>
-        </div>
-
         {/* Category pills */}
         <AnimatedSection variant="fade-up" delay={100}>
           <div className="flex gap-2 overflow-x-auto pb-4 mb-8 scrollbar-hide">
@@ -125,7 +119,6 @@ export default function MarketplacePage() {
           {placeholderProducts.map((product, i) => (
             <AnimatedSection key={product.name} variant="fade-up" delay={i * 80}>
               <div className="group rounded-2xl border border-border/60 bg-card overflow-hidden card-hover cursor-pointer">
-                {/* Product image */}
                 <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                   <img
                     src={product.image}
@@ -133,6 +126,11 @@ export default function MarketplacePage() {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                   />
+                  {product.verified && (
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-background/80 backdrop-blur-sm px-3 py-1 text-xs font-medium text-foreground">
+                      <Shield className="h-3 w-3 text-accent" /> Verified
+                    </div>
+                  )}
                 </div>
                 <div className="p-5">
                   <div className="flex items-center gap-2 mb-2">
@@ -140,7 +138,6 @@ export default function MarketplacePage() {
                       <Store className="h-3 w-3 text-primary-foreground" />
                     </div>
                     <span className="text-xs text-muted-foreground">{product.seller}</span>
-                    <Shield className="h-3 w-3 text-accent ml-auto" />
                   </div>
                   <h3 className="font-display font-semibold text-foreground group-hover:text-primary transition-colors">{product.name}</h3>
                   <div className="mt-3 flex items-center justify-between">
