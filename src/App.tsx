@@ -77,6 +77,7 @@ function AppRoutes() {
         <Route path="/marketplace" element={<MarketplacePage />} />
         <Route path="/product/:id" element={<ProductDetailPage />} />
         <Route path="/seller/:id" element={<SellerStorePage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
 
