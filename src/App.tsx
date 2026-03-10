@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CartProvider } from "@/hooks/useCart";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import RoleRedirect from "@/components/RoleRedirect";
@@ -14,6 +15,7 @@ import LandingPage from "@/pages/LandingPage";
 import MarketplacePage from "@/pages/MarketplacePage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import SellerStorePage from "@/pages/SellerStorePage";
+import CheckoutPage from "@/pages/CheckoutPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import NotFound from "@/pages/NotFound";
@@ -75,6 +77,7 @@ function AppRoutes() {
         <Route path="/marketplace" element={<MarketplacePage />} />
         <Route path="/product/:id" element={<ProductDetailPage />} />
         <Route path="/seller/:id" element={<SellerStorePage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
 
@@ -116,7 +119,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <CartProvider>
+            <AppRoutes />
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
