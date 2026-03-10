@@ -1,446 +1,252 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import AnimatedSection from "@/components/AnimatedSection";
-import StatsCounter from "@/components/StatsCounter";
-import GradientOrb from "@/components/GradientOrb";
+import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/hooks/useCart";
+import { supabase } from "@/integrations/supabase/client";
+import MarketplaceNavbar from "@/components/MarketplaceNavbar";
+import CartDrawer from "@/components/CartDrawer";
 import HeroSlider from "@/components/HeroSlider";
-import ThemeToggle from "@/components/ThemeToggle";
+import AnimatedSection from "@/components/AnimatedSection";
 import {
-  ShoppingBag, ArrowRight, Shield, Store, Zap, Users, Globe, BarChart3,
-  CheckCircle2, Lock, Star, Award, Headphones, TrendingUp, ShoppingCart,
-  UserPlus, Search, CreditCard, Quote, Menu, X
+  ShoppingCart, Package, CheckCircle2, ArrowRight, Flame, Clock, Sparkles
 } from "lucide-react";
-import heroDashboard from "@/assets/hero-dashboard.png";
+
 import heroSlide1 from "@/assets/hero-slide-1.jpg";
 import heroSlide2 from "@/assets/hero-slide-2.jpg";
 import heroSlide3 from "@/assets/hero-slide-3.jpg";
 
 const heroSlides = [
-  {
-    image: heroSlide1,
-    title: "The Future of Commerce is Here",
-    subtitle: "AI-powered fulfillment, smart inventory, and seamless logistics. Built for sellers who think big.",
-    badge: "⚡ AI-Powered Multi-Vendor Marketplace",
-  },
-  {
-    image: heroSlide2,
-    title: "Discover Premium Products",
-    subtitle: "From handcrafted leather to cutting-edge tech — browse thousands of verified products from trusted sellers worldwide.",
-    badge: "🛍️ 100,000+ Products Listed",
-  },
-  {
-    image: heroSlide3,
-    title: "Scale Your Business with Data",
-    subtitle: "Real-time analytics, AI pricing tools, and secure escrow payments. Everything you need to grow.",
-    badge: "📊 Smart Analytics Dashboard",
-  },
+  { image: heroSlide1, title: "Shop the Future", subtitle: "Premium products from verified sellers worldwide", badge: "🔥 Trending Now" },
+  { image: heroSlide2, title: "Discover Deals", subtitle: "Unbeatable prices on thousands of curated products", badge: "🛍️ New Arrivals" },
+  { image: heroSlide3, title: "Sell & Earn", subtitle: "Start your store today — zero upfront costs", badge: "🚀 Start Selling" },
 ];
 
-const features = [
-  { icon: Store, title: "Multi-Vendor Stores", desc: "Sellers get their own storefront with real-time analytics and inventory management" },
-  { icon: Shield, title: "Secure Escrow", desc: "Every transaction is protected with built-in escrow for buyer & seller safety" },
-  { icon: Zap, title: "AI-Powered Tools", desc: "Smart product imports, fraud detection, and automated pricing recommendations" },
-  { icon: Users, title: "Community Trust", desc: "Verified sellers, transparent reviews, and reputation scoring system" },
-  { icon: Globe, title: "Global Reach", desc: "Multi-currency support with buyers and sellers from around the world" },
-  { icon: BarChart3, title: "Real-Time Analytics", desc: "Track sales, visitors, conversions, and performance in real time" },
-];
+interface Product {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number;
+  compare_at_price: number | null;
+  currency: string;
+  stock_quantity: number;
+  seller_id: string;
+  category_id: string | null;
+  product_images: { image_url: string; is_primary: boolean }[];
+}
 
-const steps = [
-  { icon: UserPlus, title: "Create Account", desc: "Sign up as a seller or buyer in seconds", number: "01" },
-  { icon: Search, title: "List or Browse", desc: "Sellers list products, buyers discover them", number: "02" },
-  { icon: CreditCard, title: "Secure Transaction", desc: "Pay with confidence through escrow protection", number: "03" },
-];
-
-const stats = [
-  { value: 10000, suffix: "+", label: "Active Sellers" },
-  { value: 100000, suffix: "+", label: "Products Listed" },
-  { value: 1, prefix: "$", suffix: "M+", label: "Transactions" },
-  { value: 4.9, suffix: "", label: "Average Rating", decimals: 1 },
-];
-
-const testimonials = [
-  { name: "Sarah Chen", role: "Seller", quote: "MarketHub transformed my side hustle into a full-time business. The analytics alone are worth it.", avatar: "SC" },
-  { name: "James Okafor", role: "Buyer", quote: "Finally a marketplace where I feel safe shopping. Escrow protection gives me total peace of mind.", avatar: "JO" },
-  { name: "Maria Silva", role: "Seller", quote: "The AI tools helped me price my products competitively. My sales tripled in the first month.", avatar: "MS" },
-];
-
-const trustBadges = [
-  { icon: Lock, label: "SSL Encrypted" },
-  { icon: Shield, label: "Escrow Protected" },
-  { icon: Award, label: "Verified Sellers" },
-  { icon: Headphones, label: "24/7 Support" },
-];
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 export default function LandingPage() {
-  const { user, role } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const dashboardPath = role === "admin" ? "/admin/dashboard" : role === "seller" ? "/seller/dashboard" : "/buyer/dashboard";
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sellerProfiles, setSellerProfiles] = useState<Record<string, { full_name: string | null; is_verified: boolean }>>({});
+  const { addItem } = useCart();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [productsRes, categoriesRes] = await Promise.all([
+        supabase.from("products").select("*, product_images(*)").eq("status", "active").order("created_at", { ascending: false }),
+        supabase.from("categories").select("*").order("sort_order"),
+      ]);
+
+      if (productsRes.data) {
+        setProducts(productsRes.data as unknown as Product[]);
+        const sellerIds = [...new Set(productsRes.data.map(p => p.seller_id))];
+        if (sellerIds.length > 0) {
+          const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, is_verified").in("user_id", sellerIds);
+          if (profiles) {
+            const map: Record<string, { full_name: string | null; is_verified: boolean }> = {};
+            profiles.forEach(p => { map[p.user_id] = { full_name: p.full_name, is_verified: p.is_verified }; });
+            setSellerProfiles(map);
+          }
+        }
+      }
+      if (categoriesRes.data) setCategories(categoriesRes.data);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const filtered = products.filter(p => {
+    const matchesSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) || p.description?.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = !selectedCategory || p.category_id === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleAddToCart = (product: Product) => {
+    const primaryImage = product.product_images?.find(i => i.is_primary) || product.product_images?.[0];
+    const seller = sellerProfiles[product.seller_id];
+    addItem({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image_url: primaryImage?.image_url || null,
+      seller_id: product.seller_id,
+      seller_name: seller?.full_name || "Seller",
+      stock_quantity: product.stock_quantity,
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/20">
-        <div className="container flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-glow">
-              <ShoppingBag className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold text-foreground">MarketHub</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
-            <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-            <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
-            <Link to="/marketplace" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Marketplace</Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            {user ? (
-              <Link to={dashboardPath}>
-                <Button className="gap-2 gradient-primary text-primary-foreground shadow-glow hidden sm:inline-flex">
-                  Dashboard <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            ) : (
-              <div className="hidden sm:flex items-center gap-2">
-                <Link to="/auth/login"><Button variant="ghost" size="sm" className="text-muted-foreground">Sign In</Button></Link>
-                <Link to="/auth/register">
-                  <Button size="sm" className="gradient-primary text-primary-foreground shadow-glow">Get Started</Button>
-                </Link>
-              </div>
-            )}
-            {/* Mobile hamburger */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden text-foreground hover:text-primary transition-colors p-1"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-background">
+      <MarketplaceNavbar search={search} onSearchChange={setSearch} />
+      <CartDrawer />
 
-        {/* Mobile menu dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border/20 bg-background/95 backdrop-blur-xl animate-slide-up">
-            <div className="container py-4 space-y-3">
-              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
-              <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-              <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
-              <Link to="/marketplace" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Marketplace</Link>
-              <div className="pt-3 border-t border-border/20 flex flex-col gap-2">
-                {user ? (
-                  <Link to={dashboardPath} onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full gap-2 gradient-primary text-primary-foreground">Dashboard <ArrowRight className="h-4 w-4" /></Button>
-                  </Link>
-                ) : (
-                  <>
-                    <Link to="/auth/login" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="outline" className="w-full">Sign In</Button>
-                    </Link>
-                    <Link to="/auth/register" onClick={() => setMobileMenuOpen(false)}>
-                      <Button className="w-full gradient-primary text-primary-foreground">Get Started</Button>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* Hero Slider */}
+      {/* Hero */}
       <HeroSlider slides={heroSlides}>
-        <div className="mt-10 flex flex-col sm:flex-row gap-4">
-          <Link to="/auth/register">
-            <Button size="lg" className="w-full sm:w-auto bg-primary-foreground text-foreground hover:bg-primary-foreground/90 gap-2 text-base px-8 py-6 shadow-2xl">
-              Start Selling Free <ArrowRight className="h-5 w-5" />
-            </Button>
-          </Link>
+        <div className="mt-8 flex gap-3">
           <Link to="/marketplace">
-            <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8 py-6 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 backdrop-blur-sm">
-              Browse Marketplace
+            <Button size="lg" className="bg-primary-foreground text-foreground hover:bg-primary-foreground/90 gap-2 px-8 py-5 shadow-2xl font-semibold">
+              Shop Now <ArrowRight className="h-5 w-5" />
             </Button>
           </Link>
-        </div>
-        <div className="mt-8 hidden sm:flex flex-wrap items-center gap-6 text-sm text-primary-foreground/70">
-          {trustBadges.map((b) => (
-            <div key={b.label} className="flex items-center gap-2">
-              <b.icon className="h-4 w-4" />
-              <span>{b.label}</span>
-            </div>
-          ))}
         </div>
       </HeroSlider>
 
-      {/* Dashboard preview */}
-      <section className="relative -mt-20 z-10 pb-16">
-        <div className="container">
-          <AnimatedSection variant="fade-up" className="max-w-6xl mx-auto">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border/30 ring-1 ring-primary/10">
-              <img
-                src={heroDashboard}
-                alt="MarketHub dashboard showing analytics, product management and sales data"
-                className="w-full h-auto"
-                loading="eager"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent pointer-events-none" />
+      {/* Category pills */}
+      <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-8">
+        <AnimatedSection variant="fade-up">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <button onClick={() => setSelectedCategory(null)}
+              className={`whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition-all ${!selectedCategory ? "bg-primary text-primary-foreground shadow-glow" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}>
+              All
+            </button>
+            {categories.map(cat => (
+              <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
+                className={`whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition-all ${selectedCategory === cat.id ? "bg-primary text-primary-foreground shadow-glow" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}>
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </AnimatedSection>
+      </div>
+
+      {/* Product grid */}
+      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-8">
+        <AnimatedSection variant="fade-up" delay={50}>
+          {loading ? (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="rounded-xl border border-border bg-card overflow-hidden animate-pulse">
+                  <div className="aspect-square bg-muted" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-4 bg-muted rounded w-3/4" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                    <div className="h-5 bg-muted rounded w-1/3" />
+                  </div>
+                </div>
+              ))}
             </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* Stats bar */}
-      <section className="border-y border-border/40 bg-muted/30 py-14">
-        <div className="container">
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-            {stats.map((s, i) => (
-              <AnimatedSection key={s.label} variant="fade-up" delay={i * 100}>
-                <div className="text-center">
-                  <p className="font-display text-3xl md:text-5xl font-bold text-foreground">
-                    <StatsCounter end={s.value} prefix={s.prefix || ""} suffix={s.suffix} decimals={s.decimals || 0} />
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">{s.label}</p>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="py-24 md:py-32 relative overflow-hidden">
-        <GradientOrb color="primary" size="xl" className="-top-40 -right-60 opacity-15" />
-        <div className="container relative z-10">
-          <AnimatedSection variant="fade-up" className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground">
-              Everything You Need to <span className="gradient-text">Succeed</span>
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Built for scale. Designed for trust. Powered by AI.
-            </p>
-          </AnimatedSection>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
-            {features.map((f, i) => (
-              <AnimatedSection key={f.title} variant="fade-up" delay={i * 80}>
-                <div className="group relative rounded-2xl border border-border/60 bg-card p-8 card-hover h-full">
-                  <div className="absolute inset-0 rounded-2xl gradient-primary opacity-0 group-hover:opacity-5 transition-opacity duration-500" />
-                  <div className="relative z-10">
-                    <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:gradient-primary group-hover:text-primary-foreground group-hover:scale-110 transition-all duration-300">
-                      <f.icon className="h-7 w-7" />
-                    </div>
-                    <h3 className="font-display text-lg font-semibold text-foreground">{f.title}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-                  </div>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works */}
-      <section id="how-it-works" className="py-24 md:py-32 bg-muted/30 border-y border-border/40 relative overflow-hidden">
-        <GradientOrb color="accent" size="lg" className="-bottom-40 -left-40 opacity-15" />
-        <div className="container relative z-10">
-          <AnimatedSection variant="fade-up" className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground">
-              How It <span className="gradient-text">Works</span>
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground">Three simple steps to get started</p>
-          </AnimatedSection>
-
-          <div className="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
-            {steps.map((step, i) => (
-              <AnimatedSection key={step.number} variant="fade-up" delay={i * 150}>
-                <div className="relative text-center group">
-                  <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-3xl gradient-primary shadow-glow group-hover:scale-110 transition-transform duration-500">
-                    <step.icon className="h-10 w-10 text-primary-foreground" />
-                  </div>
-                  <span className="absolute top-0 right-0 md:right-4 font-display text-7xl font-bold text-primary/8">{step.number}</span>
-                  <h3 className="font-display text-xl font-bold text-foreground">{step.title}</h3>
-                  <p className="mt-2 text-muted-foreground">{step.desc}</p>
-                  {i < steps.length - 1 && (
-                    <div className="hidden md:block absolute top-12 -right-4 w-8">
-                      <ArrowRight className="h-6 w-6 text-primary/30" />
-                    </div>
-                  )}
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Role showcase */}
-      <section className="py-24 md:py-32 relative overflow-hidden">
-        <GradientOrb color="seller" size="lg" className="top-20 -left-40 opacity-10" />
-        <GradientOrb color="buyer" size="lg" className="bottom-20 -right-40 opacity-10" />
-        <div className="container relative z-10">
-          <AnimatedSection variant="fade-up" className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground">
-              Built for <span className="gradient-text-seller">Sellers</span> & <span className="gradient-text-buyer">Buyers</span>
-            </h2>
-          </AnimatedSection>
-
-          <div className="grid gap-8 md:grid-cols-2 max-w-5xl mx-auto">
-            <AnimatedSection variant="fade-left">
-              <div className="relative rounded-2xl border border-seller/20 bg-card p-8 md:p-10 overflow-hidden card-hover h-full">
-                <div className="absolute top-0 left-0 w-full h-1.5 gradient-seller" />
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl gradient-seller mb-6 shadow-glow-seller">
-                  <Store className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <h3 className="font-display text-2xl font-bold text-foreground mb-4">For Sellers</h3>
-                <ul className="space-y-3">
-                  {["Your own branded storefront", "Real-time sales analytics", "AI-powered pricing tools", "Secure wallet & payouts", "Promotional ad tools"].map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-muted-foreground">
-                      <CheckCircle2 className="h-5 w-5 text-seller shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/auth/register" className="mt-8 inline-block">
-                  <Button className="gradient-seller text-primary-foreground gap-2 shadow-glow-seller">
-                    Start Selling <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </AnimatedSection>
-
-            <AnimatedSection variant="fade-right" delay={100}>
-              <div className="relative rounded-2xl border border-buyer/20 bg-card p-8 md:p-10 overflow-hidden card-hover h-full">
-                <div className="absolute top-0 left-0 w-full h-1.5 gradient-buyer" />
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl gradient-buyer mb-6 shadow-glow-buyer">
-                  <ShoppingCart className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <h3 className="font-display text-2xl font-bold text-foreground mb-4">For Buyers</h3>
-                <ul className="space-y-3">
-                  {["Escrow payment protection", "Verified seller badges", "Real-time order tracking", "Direct seller messaging", "Dispute resolution support"].map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-muted-foreground">
-                      <CheckCircle2 className="h-5 w-5 text-buyer shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/auth/register" className="mt-8 inline-block">
-                  <Button className="gradient-buyer text-primary-foreground gap-2 shadow-glow-buyer">
-                    Start Shopping <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </AnimatedSection>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section id="testimonials" className="py-24 md:py-32 bg-muted/30 border-y border-border/40">
-        <div className="container">
-          <AnimatedSection variant="fade-up" className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground">
-              Loved by <span className="gradient-text">Thousands</span>
-            </h2>
-          </AnimatedSection>
-
-          <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
-            {testimonials.map((t, i) => (
-              <AnimatedSection key={t.name} variant="fade-up" delay={i * 100}>
-                <div className="rounded-2xl border border-border/60 bg-card p-8 card-hover h-full flex flex-col">
-                  <Quote className="h-8 w-8 text-primary/20 mb-4" />
-                  <p className="text-foreground leading-relaxed mb-6 flex-1">"{t.quote}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full gradient-primary text-primary-foreground font-display font-bold text-sm">
-                      {t.avatar}
-                    </div>
-                    <div>
-                      <p className="font-display font-semibold text-foreground text-sm">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">{t.role}</p>
-                    </div>
-                    <div className="ml-auto flex gap-0.5">
-                      {[...Array(5)].map((_, s) => (
-                        <Star key={s} className="h-3.5 w-3.5 fill-seller text-seller" />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-24 md:py-32 relative overflow-hidden">
-        <GradientOrb color="primary" size="xl" className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-15" />
-
-        <div className="container relative z-10">
-          <AnimatedSection variant="scale-in">
-            <div className="mx-auto max-w-4xl text-center rounded-3xl gradient-primary p-12 md:p-20 shadow-glow relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,hsl(280,80%,60%,0.3),transparent_50%)]" />
-              <div className="relative z-10">
-                <h2 className="font-display text-3xl md:text-5xl font-bold text-primary-foreground">
-                  Ready to Transform Your Business?
-                </h2>
-                <p className="mt-4 text-primary-foreground/80 text-lg max-w-xl mx-auto">
-                  Join thousands of sellers and buyers building the future of commerce.
-                </p>
-                <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link to="/auth/register">
-                    <Button size="lg" className="w-full sm:w-auto bg-primary-foreground text-foreground hover:bg-primary-foreground/90 gap-2 text-base px-8 py-6 shadow-2xl">
-                      Create Free Account <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/40 bg-card py-16">
-        <div className="container">
-          <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
-            <div>
-              <Link to="/" className="flex items-center gap-2 mb-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-                  <ShoppingBag className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <span className="font-display text-lg font-bold text-foreground">MarketHub</span>
-              </Link>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                The AI-powered marketplace platform built for the future of commerce.
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Package className="h-16 w-16 text-muted-foreground/30 mb-4" />
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                {search || selectedCategory ? "No products match your filters" : "No products listed yet"}
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground max-w-sm">
+                {search || selectedCategory ? "Try different search terms or categories" : "Products will appear here as sellers list them."}
               </p>
             </div>
-            <div>
-              <h4 className="font-display font-semibold text-foreground mb-4">Platform</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/marketplace" className="hover:text-foreground transition-colors">Marketplace</Link></li>
-                <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
-                <li><a href="#how-it-works" className="hover:text-foreground transition-colors">How it Works</a></li>
-              </ul>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered.map(product => {
+                const primaryImage = product.product_images?.find(i => i.is_primary) || product.product_images?.[0];
+                const seller = sellerProfiles[product.seller_id];
+                const discount = product.compare_at_price && product.compare_at_price > product.price
+                  ? Math.round((1 - product.price / product.compare_at_price) * 100)
+                  : null;
+
+                return (
+                  <div key={product.id} className="group rounded-xl border border-border/60 bg-card overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+                    <Link to={`/product/${product.id}`}>
+                      <div className="aspect-square bg-muted relative overflow-hidden">
+                        {primaryImage ? (
+                          <img src={primaryImage.image_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <div className="flex items-center justify-center h-full"><Package className="h-12 w-12 text-muted-foreground/20" /></div>
+                        )}
+                        {discount && (
+                          <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground font-bold">
+                            -{discount}%
+                          </Badge>
+                        )}
+                        {product.stock_quantity <= 5 && product.stock_quantity > 0 && (
+                          <Badge className="absolute top-3 right-3 bg-accent text-accent-foreground text-xs">
+                            <Flame className="h-3 w-3 mr-0.5" /> Hot
+                          </Badge>
+                        )}
+                      </div>
+                    </Link>
+                    <div className="p-4">
+                      <Link to={`/product/${product.id}`}>
+                        <h3 className="font-display font-semibold text-foreground truncate group-hover:text-primary transition-colors">{product.title}</h3>
+                      </Link>
+                      {seller && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs text-muted-foreground">{seller.full_name || "Seller"}</span>
+                          {seller.is_verified && <CheckCircle2 className="h-3 w-3 text-accent" />}
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-display text-lg font-bold text-foreground">${product.price}</span>
+                          {product.compare_at_price && product.compare_at_price > product.price && (
+                            <span className="text-sm text-muted-foreground line-through">${product.compare_at_price}</span>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
+                          className="h-9 w-9 p-0 gradient-primary text-primary-foreground rounded-lg"
+                          disabled={product.stock_quantity === 0}
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div>
-              <h4 className="font-display font-semibold text-foreground mb-4">Get Started</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/auth/register" className="hover:text-foreground transition-colors">Create Account</Link></li>
-                <li><Link to="/auth/login" className="hover:text-foreground transition-colors">Sign In</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-display font-semibold text-foreground mb-4">Trust & Safety</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-center gap-2"><Shield className="h-3.5 w-3.5 text-accent" /> Escrow Protection</li>
-                <li className="flex items-center gap-2"><Lock className="h-3.5 w-3.5 text-accent" /> SSL Encrypted</li>
-                <li className="flex items-center gap-2"><Award className="h-3.5 w-3.5 text-accent" /> Verified Sellers</li>
-              </ul>
-            </div>
+          )}
+        </AnimatedSection>
+
+        {/* View all link */}
+        {filtered.length > 0 && (
+          <div className="text-center mt-10">
+            <Link to="/marketplace">
+              <Button variant="outline" size="lg" className="gap-2 font-semibold">
+                View All Products <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
-          <div className="mt-12 border-t border-border/40 pt-8 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} MarketHub. All rights reserved.
+        )}
+      </div>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-card py-10 mt-8">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center">
+                <Package className="h-3.5 w-3.5 text-primary-foreground" />
+              </div>
+              <span className="font-display font-bold text-foreground">MarketHub</span>
+            </div>
+            <div className="flex gap-6 text-sm text-muted-foreground">
+              <Link to="/marketplace" className="hover:text-foreground transition-colors">Marketplace</Link>
+              <Link to="/auth/register" className="hover:text-foreground transition-colors">Sell With Us</Link>
+              <Link to="/auth/login" className="hover:text-foreground transition-colors">Sign In</Link>
+            </div>
+            <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} MarketHub</p>
           </div>
         </div>
       </footer>
