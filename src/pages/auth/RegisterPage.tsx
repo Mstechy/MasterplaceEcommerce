@@ -124,7 +124,7 @@ export default function RegisterPage() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full h-12 gradient-primary text-primary-foreground shadow-glow gap-2 text-base" disabled={submitting}>
+            <Button type="submit" className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-base" disabled={submitting}>
               {submitting ? "Creating account..." : <>Sign Up as {selectedRole === "buyer" ? "Buyer" : "Seller"} <ArrowRight className="h-4 w-4" /></>}
             </Button>
           </form>
