@@ -185,7 +185,7 @@ export default function CheckoutPage() {
                   <span>${totalPrice.toFixed(2)}</span>
                 </div>
               </div>
-              <Button onClick={handlePlaceOrder} disabled={loading} className="w-full mt-6 h-12 gradient-primary text-primary-foreground font-semibold text-base">
+              <Button onClick={handlePlaceOrder} disabled={loading} className="w-full mt-6 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base">
                 {loading ? "Placing Order..." : "Place Order"}
               </Button>
               <p className="text-xs text-muted-foreground text-center mt-3 flex items-center justify-center gap-1">
