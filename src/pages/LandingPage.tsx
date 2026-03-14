@@ -7,9 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import MarketplaceNavbar from "@/components/MarketplaceNavbar";
 import CartDrawer from "@/components/CartDrawer";
 import HeroSlider from "@/components/HeroSlider";
-import AnimatedSection from "@/components/AnimatedSection";
 import {
-  ShoppingCart, Package, CheckCircle2, ArrowRight, Flame, Clock, Sparkles
+  ShoppingCart, Package, CheckCircle2, ArrowRight, Flame,
+  Truck, Shield, CreditCard, Headphones, Mail
 } from "lucide-react";
 
 import heroSlide1 from "@/assets/hero-slide-1.jpg";
@@ -17,9 +17,9 @@ import heroSlide2 from "@/assets/hero-slide-2.jpg";
 import heroSlide3 from "@/assets/hero-slide-3.jpg";
 
 const heroSlides = [
-  { image: heroSlide1, title: "Shop the Future", subtitle: "Premium products from verified sellers worldwide", badge: "🔥 Trending Now" },
-  { image: heroSlide2, title: "Discover Deals", subtitle: "Unbeatable prices on thousands of curated products", badge: "🛍️ New Arrivals" },
-  { image: heroSlide3, title: "Sell & Earn", subtitle: "Start your store today — zero upfront costs", badge: "🚀 Start Selling" },
+  { image: heroSlide1, title: "Shop the Best Deals", subtitle: "Premium products from verified sellers worldwide", badge: "🔥 Trending Now" },
+  { image: heroSlide2, title: "New Season Arrivals", subtitle: "Discover the latest in fashion, tech & lifestyle", badge: "🛍️ New Arrivals" },
+  { image: heroSlide3, title: "Your Workspace, Upgraded", subtitle: "Top-rated electronics and home office essentials", badge: "💻 Tech Deals" },
 ];
 
 interface Product {
@@ -104,149 +104,196 @@ export default function LandingPage() {
       <HeroSlider slides={heroSlides}>
         <div className="mt-8 flex gap-3">
           <Link to="/marketplace">
-            <Button size="lg" className="bg-primary-foreground text-foreground hover:bg-primary-foreground/90 gap-2 px-8 py-5 shadow-2xl font-semibold">
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-8 py-5 shadow-lg font-semibold rounded-lg">
               Shop Now <ArrowRight className="h-5 w-5" />
             </Button>
           </Link>
         </div>
       </HeroSlider>
 
-      {/* Category pills */}
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-8">
-        <AnimatedSection variant="fade-up">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <button onClick={() => setSelectedCategory(null)}
-              className={`whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition-all ${!selectedCategory ? "bg-primary text-primary-foreground shadow-glow" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}>
-              All
-            </button>
-            {categories.map(cat => (
-              <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
-                className={`whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition-all ${selectedCategory === cat.id ? "bg-primary text-primary-foreground shadow-glow" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}>
-                {cat.name}
-              </button>
+      {/* Trust bar */}
+      <div className="border-b border-border bg-card">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { icon: Truck, text: "Free Shipping" },
+              { icon: Shield, text: "Buyer Protection" },
+              { icon: CreditCard, text: "Secure Payment" },
+              { icon: Headphones, text: "24/7 Support" },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Icon className="h-4 w-4 text-primary" />
+                <span className="font-medium">{text}</span>
+              </div>
             ))}
           </div>
-        </AnimatedSection>
+        </div>
+      </div>
+
+      {/* Category pills */}
+      <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-8">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <button onClick={() => setSelectedCategory(null)}
+            className={`whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition-colors ${!selectedCategory ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}>
+            All
+          </button>
+          {categories.map(cat => (
+            <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
+              className={`whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition-colors ${selectedCategory === cat.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}>
+              {cat.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Product grid */}
       <div className="mx-auto max-w-7xl px-4 lg:px-8 py-8">
-        <AnimatedSection variant="fade-up" delay={50}>
-          {loading ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="rounded-xl border border-border bg-card overflow-hidden animate-pulse">
-                  <div className="aspect-square bg-muted" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-muted rounded w-3/4" />
-                    <div className="h-3 bg-muted rounded w-1/2" />
-                    <div className="h-5 bg-muted rounded w-1/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Package className="h-16 w-16 text-muted-foreground/30 mb-4" />
-              <h3 className="font-display text-xl font-semibold text-foreground">
-                {search || selectedCategory ? "No products match your filters" : "No products listed yet"}
-              </h3>
-              <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-                {search || selectedCategory ? "Try different search terms or categories" : "Products will appear here as sellers list them."}
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filtered.map(product => {
-                const primaryImage = product.product_images?.find(i => i.is_primary) || product.product_images?.[0];
-                const seller = sellerProfiles[product.seller_id];
-                const discount = product.compare_at_price && product.compare_at_price > product.price
-                  ? Math.round((1 - product.price / product.compare_at_price) * 100)
-                  : null;
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-display text-2xl font-bold text-foreground">Featured Products</h2>
+          <Link to="/marketplace" className="text-sm text-primary hover:underline font-medium flex items-center gap-1">
+            View All <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
 
-                return (
-                  <div key={product.id} className="group rounded-xl border border-border/60 bg-card overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-                    <Link to={`/product/${product.id}`}>
-                      <div className="aspect-square bg-muted relative overflow-hidden">
-                        {primaryImage ? (
-                          <img src={primaryImage.image_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        ) : (
-                          <div className="flex items-center justify-center h-full"><Package className="h-12 w-12 text-muted-foreground/20" /></div>
-                        )}
-                        {discount && (
-                          <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground font-bold">
-                            -{discount}%
-                          </Badge>
-                        )}
-                        {product.stock_quantity <= 5 && product.stock_quantity > 0 && (
-                          <Badge className="absolute top-3 right-3 bg-accent text-accent-foreground text-xs">
-                            <Flame className="h-3 w-3 mr-0.5" /> Hot
-                          </Badge>
-                        )}
-                      </div>
-                    </Link>
-                    <div className="p-4">
-                      <Link to={`/product/${product.id}`}>
-                        <h3 className="font-display font-semibold text-foreground truncate group-hover:text-primary transition-colors">{product.title}</h3>
-                      </Link>
-                      {seller && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="text-xs text-muted-foreground">{seller.full_name || "Seller"}</span>
-                          {seller.is_verified && <CheckCircle2 className="h-3 w-3 text-accent" />}
-                        </div>
+        {loading ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="rounded-lg border border-border bg-card overflow-hidden animate-pulse">
+                <div className="aspect-square bg-muted" />
+                <div className="p-4 space-y-2">
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                  <div className="h-5 bg-muted rounded w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Package className="h-16 w-16 text-muted-foreground/30 mb-4" />
+            <h3 className="font-display text-xl font-semibold text-foreground">
+              {search || selectedCategory ? "No products match your filters" : "No products listed yet"}
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground max-w-sm">
+              {search || selectedCategory ? "Try different search terms or categories" : "Products will appear here as sellers list them."}
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filtered.map(product => {
+              const primaryImage = product.product_images?.find(i => i.is_primary) || product.product_images?.[0];
+              const seller = sellerProfiles[product.seller_id];
+              const discount = product.compare_at_price && product.compare_at_price > product.price
+                ? Math.round((1 - product.price / product.compare_at_price) * 100)
+                : null;
+
+              return (
+                <div key={product.id} className="group rounded-lg border border-border bg-card overflow-hidden transition-shadow hover:shadow-md">
+                  <Link to={`/product/${product.id}`}>
+                    <div className="aspect-square bg-muted relative overflow-hidden">
+                      {primaryImage ? (
+                        <img src={primaryImage.image_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      ) : (
+                        <div className="flex items-center justify-center h-full"><Package className="h-12 w-12 text-muted-foreground/20" /></div>
                       )}
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-display text-lg font-bold text-foreground">${product.price}</span>
-                          {product.compare_at_price && product.compare_at_price > product.price && (
-                            <span className="text-sm text-muted-foreground line-through">${product.compare_at_price}</span>
-                          )}
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
-                          className="h-9 w-9 p-0 gradient-primary text-primary-foreground rounded-lg"
-                          disabled={product.stock_quantity === 0}
-                        >
-                          <ShoppingCart className="h-4 w-4" />
-                        </Button>
+                      {discount && (
+                        <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground font-bold text-xs">
+                          -{discount}%
+                        </Badge>
+                      )}
+                      {product.stock_quantity <= 5 && product.stock_quantity > 0 && (
+                        <Badge className="absolute top-3 right-3 bg-accent text-accent-foreground text-xs">
+                          <Flame className="h-3 w-3 mr-0.5" /> Hot
+                        </Badge>
+                      )}
+                    </div>
+                  </Link>
+                  <div className="p-4">
+                    <Link to={`/product/${product.id}`}>
+                      <h3 className="font-medium text-foreground truncate group-hover:text-primary transition-colors text-sm">{product.title}</h3>
+                    </Link>
+                    {seller && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="text-xs text-muted-foreground">{seller.full_name || "Seller"}</span>
+                        {seller.is_verified && <CheckCircle2 className="h-3 w-3 text-accent" />}
                       </div>
+                    )}
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display text-lg font-bold text-foreground">${product.price}</span>
+                        {product.compare_at_price && product.compare_at_price > product.price && (
+                          <span className="text-xs text-muted-foreground line-through">${product.compare_at_price}</span>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
+                        className="h-9 w-9 p-0 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                        disabled={product.stock_quantity === 0}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </AnimatedSection>
-
-        {/* View all link */}
-        {filtered.length > 0 && (
-          <div className="text-center mt-10">
-            <Link to="/marketplace">
-              <Button variant="outline" size="lg" className="gap-2 font-semibold">
-                View All Products <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card py-10 mt-8">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center">
-                <Package className="h-3.5 w-3.5 text-primary-foreground" />
+      <footer className="border-t border-border bg-[hsl(var(--navbar))] text-[hsl(var(--navbar-foreground))] mt-12">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Brand */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                  <Package className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <span className="font-display text-lg font-bold">MarketHub</span>
               </div>
-              <span className="font-display font-bold text-foreground">MarketHub</span>
+              <p className="text-sm text-[hsl(var(--navbar-foreground)/0.6)] leading-relaxed">
+                Your trusted multi-vendor marketplace. Shop from thousands of verified sellers.
+              </p>
             </div>
-            <div className="flex gap-6 text-sm text-muted-foreground">
-              <Link to="/marketplace" className="hover:text-foreground transition-colors">Marketplace</Link>
-              <Link to="/auth/register" className="hover:text-foreground transition-colors">Sell With Us</Link>
-              <Link to="/auth/login" className="hover:text-foreground transition-colors">Sign In</Link>
+
+            {/* Shop */}
+            <div>
+              <h4 className="font-display font-semibold mb-3 text-sm">Shop</h4>
+              <ul className="space-y-2 text-sm text-[hsl(var(--navbar-foreground)/0.6)]">
+                <li><Link to="/marketplace" className="hover:text-[hsl(var(--navbar-foreground))] transition-colors">All Products</Link></li>
+                <li><Link to="/marketplace" className="hover:text-[hsl(var(--navbar-foreground))] transition-colors">Categories</Link></li>
+                <li><Link to="/marketplace" className="hover:text-[hsl(var(--navbar-foreground))] transition-colors">Deals</Link></li>
+              </ul>
             </div>
-            <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} MarketHub</p>
+
+            {/* Sell */}
+            <div>
+              <h4 className="font-display font-semibold mb-3 text-sm">Sell</h4>
+              <ul className="space-y-2 text-sm text-[hsl(var(--navbar-foreground)/0.6)]">
+                <li><Link to="/auth/register" className="hover:text-[hsl(var(--navbar-foreground))] transition-colors">Start Selling</Link></li>
+                <li><Link to="/auth/login" className="hover:text-[hsl(var(--navbar-foreground))] transition-colors">Seller Login</Link></li>
+              </ul>
+            </div>
+
+            {/* Support */}
+            <div>
+              <h4 className="font-display font-semibold mb-3 text-sm">Support</h4>
+              <ul className="space-y-2 text-sm text-[hsl(var(--navbar-foreground)/0.6)]">
+                <li><Link to="/auth/login" className="hover:text-[hsl(var(--navbar-foreground))] transition-colors">My Account</Link></li>
+                <li><span className="cursor-default">Contact Us</span></li>
+                <li><span className="cursor-default">Terms of Service</span></li>
+                <li><span className="cursor-default">Privacy Policy</span></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-[hsl(var(--navbar-foreground)/0.1)] mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-[hsl(var(--navbar-foreground)/0.4)]">© {new Date().getFullYear()} MarketHub. All rights reserved.</p>
+            <div className="flex items-center gap-1 text-xs text-[hsl(var(--navbar-foreground)/0.4)]">
+              <Mail className="h-3 w-3" /> support@markethub.com
+            </div>
           </div>
         </div>
       </footer>
