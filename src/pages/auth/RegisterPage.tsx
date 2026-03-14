@@ -75,7 +75,7 @@ export default function RegisterPage() {
       <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 xl:px-24">
         <div className="mx-auto w-full max-w-md animate-slide-up">
           <Link to="/" className="inline-flex items-center gap-2.5 mb-12">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-glow">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
               <ShoppingBag className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="font-display text-2xl font-bold text-foreground">MarketHub</span>
