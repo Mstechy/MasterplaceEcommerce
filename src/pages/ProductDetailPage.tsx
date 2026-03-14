@@ -133,7 +133,7 @@ export default function ProductDetailPage() {
 
             <div className="flex gap-3">
               <Button onClick={handleAddToCart} disabled={product.stock_quantity === 0}
-                className="flex-1 gap-2 gradient-primary text-primary-foreground shadow-glow h-12 font-semibold">
+                className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-semibold">
                 <ShoppingCart className="h-5 w-5" /> Add to Cart
               </Button>
               <Link to="/checkout">

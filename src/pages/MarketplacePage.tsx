@@ -164,7 +164,7 @@ export default function MarketplacePage() {
                           )}
                         </div>
                         <Button size="sm" onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
-                          className="h-9 w-9 p-0 gradient-primary text-primary-foreground rounded-lg"
+                          className="h-9 w-9 p-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
                           disabled={product.stock_quantity === 0}>
                           <ShoppingCart className="h-4 w-4" />
                         </Button>

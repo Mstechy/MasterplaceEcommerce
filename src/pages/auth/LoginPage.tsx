@@ -48,7 +48,7 @@ export default function LoginPage() {
       <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 xl:px-24">
         <div className="mx-auto w-full max-w-md animate-slide-up">
           <Link to="/" className="inline-flex items-center gap-2.5 mb-12">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-glow">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
               <ShoppingBag className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="font-display text-2xl font-bold text-foreground">MarketHub</span>
@@ -91,7 +91,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full h-12 gradient-primary text-primary-foreground shadow-glow gap-2 text-base" disabled={submitting}>
+            <Button type="submit" className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-base" disabled={submitting}>
               {submitting ? "Signing in..." : <>Sign In <ArrowRight className="h-4 w-4" /></>}
             </Button>
           </form>

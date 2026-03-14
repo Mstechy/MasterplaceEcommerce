@@ -84,8 +84,6 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        glow: "var(--shadow-glow)",
-        "glow-lg": "0 0 60px hsl(var(--primary) / 0.2)",
         "glow-seller": "0 0 30px hsl(var(--seller) / 0.15)",
         "glow-buyer": "0 0 30px hsl(var(--buyer) / 0.15)",
       },
