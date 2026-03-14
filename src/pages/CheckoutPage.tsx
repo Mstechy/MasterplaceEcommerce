@@ -92,7 +92,7 @@ export default function CheckoutPage() {
           <h2 className="font-display text-2xl font-bold text-foreground">Your cart is empty</h2>
           <p className="mt-2 text-muted-foreground">Add some products before checking out.</p>
           <Link to="/marketplace">
-            <Button className="mt-6 gradient-primary text-primary-foreground">Browse Products</Button>
+            <Button className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90">Browse Products</Button>
           </Link>
         </div>
       </div>
