@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   ShoppingBag, Menu, X, LogOut, User, ChevronDown,
   LayoutDashboard, Package, ShoppingCart, BarChart3,
-  Users, Megaphone, AlertTriangle, Wallet, MessageSquare, Store, Truck, Flag
+  Users, Megaphone, AlertTriangle, Wallet, MessageSquare, Store, Truck, Flag, Heart
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -38,6 +38,7 @@ const sellerNav: NavItem[] = [
 const buyerNav: NavItem[] = [
   { label: "Dashboard", href: "/buyer/dashboard", icon: LayoutDashboard },
   { label: "Orders", href: "/buyer/orders", icon: ShoppingCart },
+  { label: "Wishlist", href: "/buyer/wishlist", icon: Heart },
   { label: "Tracking", href: "/buyer/tracking", icon: Truck },
   { label: "Chat", href: "/buyer/chat", icon: MessageSquare },
   { label: "Reports", href: "/buyer/reports", icon: Flag },
@@ -82,11 +83,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Gradient accent line at top */}
         <div className={`h-0.5 w-full ${roleGradient}`} />
-
         <div className="flex h-full flex-col">
-          {/* Logo */}
           <div className="flex h-16 items-center justify-between border-b border-border px-4">
             <Link to="/" className="flex items-center gap-2 group">
               <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${roleGradient} transition-transform group-hover:scale-110`}>
@@ -99,7 +97,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
 
-          {/* Role badge */}
           <div className="px-4 py-3">
             <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground ${roleGradient}`}>
               {role === "admin" && <LayoutDashboard className="h-3 w-3" />}
@@ -109,7 +106,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          {/* Nav items */}
           <nav className="flex-1 space-y-1 px-3 py-2">
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
@@ -132,7 +128,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          {/* User section */}
           <div className="border-t border-border p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -161,15 +156,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Main content */}
       <div className="flex flex-1 flex-col">
-        {/* Top bar with glass effect */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/60 glass-strong px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card/80 backdrop-blur-md px-4 lg:px-6">
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-foreground hover:text-primary transition-colors">
             <Menu className="h-5 w-5" />
           </button>
@@ -182,7 +174,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </Link>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 p-4 lg:p-6 animate-fade-in">{children}</main>
       </div>
     </div>

@@ -120,7 +120,7 @@ export default function SellerProducts() {
       const { error } = await supabase.from("products").update(productData).eq("id", editingProduct.id);
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); setSaving(false); return; }
     } else {
-      const { data, error } = await supabase.from("products").insert(productData).select("id").single();
+      const { data, error } = await supabase.from("products").insert({ ...productData, status: "active" as any }).select("id").single();
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); setSaving(false); return; }
       productId = data.id;
     }

@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle2, Package, Store, ShoppingCart } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Package, Store, ShoppingCart, Heart, Truck, Shield, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
+import { useAuth } from "@/hooks/useAuth";
 import MarketplaceNavbar from "@/components/MarketplaceNavbar";
 import CartDrawer from "@/components/CartDrawer";
 
@@ -25,11 +27,14 @@ export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const { isWishlisted, toggleWishlist } = useWishlist();
   const [product, setProduct] = useState<Product | null>(null);
   const [seller, setSeller] = useState<{ full_name: string | null; is_verified: boolean; user_id: string } | null>(null);
   const [category, setCategory] = useState<{ name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (!id) return;
@@ -51,15 +56,17 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product) return;
     const primaryImage = product.product_images?.find(i => i.is_primary) || product.product_images?.[0];
-    addItem({
-      id: product.id,
-      title: product.title,
-      price: product.price,
-      image_url: primaryImage?.image_url || null,
-      seller_id: product.seller_id,
-      seller_name: seller?.full_name || "Seller",
-      stock_quantity: product.stock_quantity,
-    });
+    for (let i = 0; i < quantity; i++) {
+      addItem({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        image_url: primaryImage?.image_url || null,
+        seller_id: product.seller_id,
+        seller_name: seller?.full_name || "Seller",
+        stock_quantity: product.stock_quantity,
+      });
+    }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
@@ -131,16 +138,49 @@ export default function ProductDetailPage() {
               )}
             </div>
 
+            {/* Quantity selector */}
+            {product.stock_quantity > 0 && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-foreground">Quantity:</span>
+                <div className="flex items-center border border-border rounded-lg">
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="px-3 py-2 text-muted-foreground hover:text-foreground transition-colors">−</button>
+                  <span className="px-4 py-2 font-medium text-foreground border-x border-border min-w-[3rem] text-center">{quantity}</span>
+                  <button onClick={() => setQuantity(q => Math.min(product.stock_quantity, q + 1))} className="px-3 py-2 text-muted-foreground hover:text-foreground transition-colors">+</button>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-3">
               <Button onClick={handleAddToCart} disabled={product.stock_quantity === 0}
                 className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-semibold">
                 <ShoppingCart className="h-5 w-5" /> Add to Cart
               </Button>
-              <Link to="/checkout">
-                <Button variant="outline" className="h-12 px-6 font-semibold" onClick={handleAddToCart} disabled={product.stock_quantity === 0}>
-                  Buy Now
+              {user && (
+                <Button variant="outline" className="h-12 px-4"
+                  onClick={() => toggleWishlist(product.id)}>
+                  <Heart className={`h-5 w-5 ${isWishlisted(product.id) ? "fill-destructive text-destructive" : ""}`} />
                 </Button>
-              </Link>
+              )}
+            </div>
+
+            <Link to="/checkout">
+              <Button variant="outline" className="w-full h-12 font-semibold" onClick={handleAddToCart} disabled={product.stock_quantity === 0}>
+                Buy Now
+              </Button>
+            </Link>
+
+            {/* Guarantees */}
+            <div className="grid grid-cols-3 gap-3 pt-2">
+              {[
+                { icon: Truck, text: "Free Shipping" },
+                { icon: Shield, text: "Buyer Protection" },
+                { icon: RotateCcw, text: "Easy Returns" },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex flex-col items-center gap-1 rounded-lg border border-border p-3 text-center">
+                  <Icon className="h-4 w-4 text-primary" />
+                  <span className="text-xs text-muted-foreground font-medium">{text}</span>
+                </div>
+              ))}
             </div>
 
             {seller && (

@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, CheckCircle2, Package, Flame } from "lucide-react";
+import { ShoppingCart, CheckCircle2, Package, Flame, Heart } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import MarketplaceNavbar from "@/components/MarketplaceNavbar";
 import CartDrawer from "@/components/CartDrawer";
 import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
@@ -32,6 +34,8 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [sellerProfiles, setSellerProfiles] = useState<Record<string, { full_name: string | null; is_verified: boolean }>>({});
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
   useEffect(() => { fetchData(); }, []);
 
@@ -136,7 +140,7 @@ export default function MarketplacePage() {
                     <Link to={`/product/${product.id}`}>
                       <div className="aspect-square bg-muted relative overflow-hidden">
                         {primaryImage ? (
-                          <img src={primaryImage.image_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <img src={primaryImage.image_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                         ) : (
                           <div className="flex items-center justify-center h-full"><Package className="h-12 w-12 text-muted-foreground/20" /></div>
                         )}
@@ -163,11 +167,21 @@ export default function MarketplacePage() {
                             <span className="text-sm text-muted-foreground line-through">${product.compare_at_price}</span>
                           )}
                         </div>
-                        <Button size="sm" onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
-                          className="h-9 w-9 p-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
-                          disabled={product.stock_quantity === 0}>
-                          <ShoppingCart className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          {user && (
+                            <button
+                              onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
+                              className={`h-9 w-9 flex items-center justify-center rounded-lg border border-border transition-colors ${isWishlisted(product.id) ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive hover:bg-muted"}`}
+                            >
+                              <Heart className={`h-4 w-4 ${isWishlisted(product.id) ? "fill-current" : ""}`} />
+                            </button>
+                          )}
+                          <Button size="sm" onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
+                            className="h-9 w-9 p-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
+                            disabled={product.stock_quantity === 0}>
+                            <ShoppingCart className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
