@@ -41,6 +41,7 @@ import BuyerOrders from "@/pages/buyer/BuyerOrders";
 import BuyerTracking from "@/pages/buyer/BuyerTracking";
 import BuyerChat from "@/pages/buyer/BuyerChat";
 import BuyerReports from "@/pages/buyer/BuyerReports";
+import BuyerWishlist from "@/pages/buyer/BuyerWishlist";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,7 @@ function AppRoutes() {
         {/* Buyer */}
         <Route path="/buyer/dashboard" element={<BuyerRoute><BuyerDashboard /></BuyerRoute>} />
         <Route path="/buyer/orders" element={<BuyerRoute><BuyerOrders /></BuyerRoute>} />
+        <Route path="/buyer/wishlist" element={<BuyerRoute><BuyerWishlist /></BuyerRoute>} />
         <Route path="/buyer/tracking" element={<BuyerRoute><BuyerTracking /></BuyerRoute>} />
         <Route path="/buyer/chat" element={<BuyerRoute><BuyerChat /></BuyerRoute>} />
         <Route path="/buyer/reports" element={<BuyerRoute><BuyerReports /></BuyerRoute>} />

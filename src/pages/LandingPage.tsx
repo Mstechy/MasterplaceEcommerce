@@ -3,13 +3,15 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import MarketplaceNavbar from "@/components/MarketplaceNavbar";
 import CartDrawer from "@/components/CartDrawer";
 import HeroSlider from "@/components/HeroSlider";
 import {
-  ShoppingCart, Package, CheckCircle2, ArrowRight, Flame,
-  Truck, Shield, CreditCard, Headphones, Mail
+  ShoppingCart, Package, CheckCircle2, ArrowRight, Flame, Heart,
+  Truck, Shield, CreditCard, Headphones, Mail, Star
 } from "lucide-react";
 
 import heroSlide1 from "@/assets/hero-slide-1.jpg";
@@ -49,6 +51,8 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [sellerProfiles, setSellerProfiles] = useState<Record<string, { full_name: string | null; is_verified: boolean }>>({});
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -192,7 +196,7 @@ export default function LandingPage() {
                   <Link to={`/product/${product.id}`}>
                     <div className="aspect-square bg-muted relative overflow-hidden">
                       {primaryImage ? (
-                        <img src={primaryImage.image_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <img src={primaryImage.image_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                       ) : (
                         <div className="flex items-center justify-center h-full"><Package className="h-12 w-12 text-muted-foreground/20" /></div>
                       )}
@@ -225,14 +229,24 @@ export default function LandingPage() {
                           <span className="text-xs text-muted-foreground line-through">${product.compare_at_price}</span>
                         )}
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
-                        className="h-9 w-9 p-0 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-                        disabled={product.stock_quantity === 0}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {user && (
+                          <button
+                            onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
+                            className={`h-9 w-9 flex items-center justify-center rounded-lg border border-border transition-colors ${isWishlisted(product.id) ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive hover:bg-muted"}`}
+                          >
+                            <Heart className={`h-4 w-4 ${isWishlisted(product.id) ? "fill-current" : ""}`} />
+                          </button>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
+                          className="h-9 w-9 p-0 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                          disabled={product.stock_quantity === 0}
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -246,7 +260,6 @@ export default function LandingPage() {
       <footer className="border-t border-border bg-[hsl(var(--navbar))] text-[hsl(var(--navbar-foreground))] mt-12">
         <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
@@ -258,8 +271,6 @@ export default function LandingPage() {
                 Your trusted multi-vendor marketplace. Shop from thousands of verified sellers.
               </p>
             </div>
-
-            {/* Shop */}
             <div>
               <h4 className="font-display font-semibold mb-3 text-sm">Shop</h4>
               <ul className="space-y-2 text-sm text-[hsl(var(--navbar-foreground)/0.6)]">
@@ -268,8 +279,6 @@ export default function LandingPage() {
                 <li><Link to="/marketplace" className="hover:text-[hsl(var(--navbar-foreground))] transition-colors">Deals</Link></li>
               </ul>
             </div>
-
-            {/* Sell */}
             <div>
               <h4 className="font-display font-semibold mb-3 text-sm">Sell</h4>
               <ul className="space-y-2 text-sm text-[hsl(var(--navbar-foreground)/0.6)]">
@@ -277,8 +286,6 @@ export default function LandingPage() {
                 <li><Link to="/auth/login" className="hover:text-[hsl(var(--navbar-foreground))] transition-colors">Seller Login</Link></li>
               </ul>
             </div>
-
-            {/* Support */}
             <div>
               <h4 className="font-display font-semibold mb-3 text-sm">Support</h4>
               <ul className="space-y-2 text-sm text-[hsl(var(--navbar-foreground)/0.6)]">
