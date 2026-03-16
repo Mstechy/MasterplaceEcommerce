@@ -21,12 +21,12 @@ export default function SellerDashboard() {
         supabase.from("orders").select("id, total_amount, status").eq("seller_id", user.id),
       ]);
 
-      // Separate query for pending approval count to avoid deep type instantiation
-      const { count: pendingCount } = await supabase
+      // Separate query for pending approval count
+      const pendingQuery = supabase
         .from("products")
         .select("id", { count: "exact", head: true })
-        .eq("seller_id", user.id)
-        .eq("is_approved" as any, false);
+        .eq("seller_id", user.id) as any;
+      const { count: pendingCount } = await pendingQuery.eq("is_approved", false);
 
       const orders = ordersRes.data || [];
       const pending = orders.filter(o => o.status === "pending" || o.status === "processing").length;
