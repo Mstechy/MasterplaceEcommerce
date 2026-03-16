@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Package, Pencil, Trash2, ImagePlus, Eye, EyeOff, Archive } from "lucide-react";
+import { Plus, Search, Package, Pencil, Trash2, ImagePlus, Eye, EyeOff, Archive, Clock, CheckCircle2 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,17 +27,12 @@ interface Product {
   currency: string;
   category_id: string | null;
   status: "draft" | "active" | "archived";
+  is_approved: boolean;
   stock_quantity: number;
   sku: string | null;
   created_at: string;
   product_images: { id: string; image_url: string; is_primary: boolean }[];
 }
-
-const statusColors: Record<string, string> = {
-  active: "bg-accent/10 text-accent border-accent/20",
-  draft: "bg-muted text-muted-foreground border-border",
-  archived: "bg-destructive/10 text-destructive border-destructive/20",
-};
 
 export default function SellerProducts() {
   const { user } = useAuth();
@@ -57,7 +52,7 @@ export default function SellerProducts() {
   const [categoryId, setCategoryId] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
   const [sku, setSku] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
   const fetchProducts = useCallback(async () => {
@@ -67,7 +62,7 @@ export default function SellerProducts() {
       .select("*, product_images(*)")
       .eq("seller_id", user.id)
       .order("created_at", { ascending: false });
-    if (!error && data) setProducts(data as unknown as Product[]);
+    if (!error && data) setProducts(data.map(p => ({ ...p, is_approved: (p as any).is_approved ?? false })) as unknown as Product[]);
     setLoading(false);
   }, [user]);
 
@@ -83,7 +78,7 @@ export default function SellerProducts() {
 
   const resetForm = () => {
     setTitle(""); setDescription(""); setPrice(""); setCompareAtPrice("");
-    setCategoryId(""); setStockQuantity(""); setSku(""); setImageFile(null);
+    setCategoryId(""); setStockQuantity(""); setSku(""); setImageFiles([]);
     setEditingProduct(null);
   };
 
@@ -125,22 +120,28 @@ export default function SellerProducts() {
       productId = data.id;
     }
 
-    // Upload image if selected
-    if (imageFile && productId) {
-      const ext = imageFile.name.split(".").pop();
-      const filePath = `${user.id}/${productId}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, imageFile);
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
-        await supabase.from("product_images").insert({
-          product_id: productId,
-          image_url: urlData.publicUrl,
-          is_primary: true,
-        });
+    // Upload images
+    if (imageFiles.length > 0 && productId) {
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        const ext = file.name.split(".").pop();
+        const filePath = `${user.id}/${productId}/${Date.now()}_${i}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file);
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
+          await supabase.from("product_images").insert({
+            product_id: productId,
+            image_url: urlData.publicUrl,
+            is_primary: i === 0 && !editingProduct,
+          });
+        }
       }
     }
 
-    toast({ title: editingProduct ? "Product updated" : "Product created" });
+    toast({
+      title: editingProduct ? "Product updated" : "Product submitted for approval",
+      description: editingProduct ? undefined : "Your product will be visible on the marketplace once approved by admin.",
+    });
     resetForm();
     setDialogOpen(false);
     setSaving(false);
@@ -168,6 +169,20 @@ export default function SellerProducts() {
     p.title.toLowerCase().includes(search.toLowerCase())
   );
 
+  const getApprovalBadge = (product: Product) => {
+    if (product.status !== "active") return null;
+    if (product.is_approved) {
+      return <Badge className="bg-accent/10 text-accent border-accent/20 gap-1 text-xs"><CheckCircle2 className="h-3 w-3" /> Approved</Badge>;
+    }
+    return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 gap-1 text-xs"><Clock className="h-3 w-3" /> Pending Approval</Badge>;
+  };
+
+  const statusColors: Record<string, string> = {
+    active: "bg-accent/10 text-accent border-accent/20",
+    draft: "bg-muted text-muted-foreground border-border",
+    archived: "bg-destructive/10 text-destructive border-destructive/20",
+  };
+
   return (
     <div className="space-y-6">
       <AnimatedSection variant="fade-up">
@@ -185,6 +200,9 @@ export default function SellerProducts() {
             <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display">{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
+                {!editingProduct && (
+                  <p className="text-sm text-muted-foreground mt-1">Your product will be reviewed by admin before going live on the marketplace.</p>
+                )}
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div>
@@ -225,17 +243,20 @@ export default function SellerProducts() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-foreground">Product Image</label>
+                  <label className="text-sm font-medium text-foreground">Product Images</label>
                   <div className="mt-1 flex items-center gap-3">
                     <label className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors w-full">
                       <ImagePlus className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">{imageFile ? imageFile.name : "Choose image..."}</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                      <span className="text-sm text-muted-foreground">
+                        {imageFiles.length > 0 ? `${imageFiles.length} file${imageFiles.length > 1 ? "s" : ""} selected` : "Choose images..."}
+                      </span>
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setImageFiles(Array.from(e.target.files || []))} />
                     </label>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-1">You can select multiple images. First image will be the primary.</p>
                 </div>
                 <Button onClick={handleSave} disabled={saving || !title.trim() || !price} className="w-full gradient-seller text-primary-foreground">
-                  {saving ? "Saving..." : editingProduct ? "Update Product" : "Create Product"}
+                  {saving ? "Saving..." : editingProduct ? "Update Product" : "Submit for Approval"}
                 </Button>
               </div>
             </DialogContent>
@@ -243,7 +264,6 @@ export default function SellerProducts() {
         </div>
       </AnimatedSection>
 
-      {/* Search */}
       <AnimatedSection variant="fade-up" delay={50}>
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -251,7 +271,6 @@ export default function SellerProducts() {
         </div>
       </AnimatedSection>
 
-      {/* Product list */}
       <AnimatedSection variant="fade-up" delay={100}>
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Loading products...</div>
@@ -266,7 +285,7 @@ export default function SellerProducts() {
                   {search ? "No products match your search" : "No products yet"}
                 </h3>
                 <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-                  {search ? "Try a different search term" : "Start listing products to reach buyers worldwide."}
+                  {search ? "Try a different search term" : "Start listing products to reach buyers worldwide. Products will be reviewed by admin before going live."}
                 </p>
               </div>
             </CardContent>
@@ -285,9 +304,11 @@ export default function SellerProducts() {
                         <Package className="h-10 w-10 text-muted-foreground/40" />
                       </div>
                     )}
-                    <Badge className={`absolute top-3 right-3 ${statusColors[product.status]}`}>
-                      {product.status}
-                    </Badge>
+                    <div className="absolute top-3 right-3 flex gap-1">
+                      <Badge className={statusColors[product.status]}>
+                        {product.status}
+                      </Badge>
+                    </div>
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-display font-semibold text-foreground truncate">{product.title}</h3>
@@ -297,7 +318,10 @@ export default function SellerProducts() {
                         <span className="text-sm text-muted-foreground line-through">${product.compare_at_price}</span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Stock: {product.stock_quantity}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <p className="text-xs text-muted-foreground">Stock: {product.stock_quantity}</p>
+                      {getApprovalBadge(product)}
+                    </div>
                     <div className="flex gap-1 mt-3">
                       <Button variant="outline" size="sm" onClick={() => openEdit(product)} className="flex-1 gap-1">
                         <Pencil className="h-3 w-3" /> Edit

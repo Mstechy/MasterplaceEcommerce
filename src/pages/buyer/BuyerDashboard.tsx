@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Truck, DollarSign, Search, MessageSquare, Package, Flag, ArrowRight, Shield, Star, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ShoppingCart, Truck, DollarSign, Search, MessageSquare, Package, Flag, ArrowRight, Shield, Star, Clock, Heart } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,19 +11,43 @@ import { supabase } from "@/integrations/supabase/client";
 export default function BuyerDashboard() {
   const { user, profile } = useAuth();
   const [stats, setStats] = useState({ activeOrders: 0, inTransit: 0, totalSpent: 0 });
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+
+  const statusColors: Record<string, string> = {
+    pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    processing: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    shipped: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    delivered: "bg-accent/10 text-accent border-accent/20",
+    cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+  };
 
   useEffect(() => {
     if (!user) return;
-    const fetchStats = async () => {
-      const { data: orders } = await supabase.from("orders").select("status, total_amount").eq("buyer_id", user.id);
+    const fetchData = async () => {
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("id, status, total_amount, created_at, seller_id")
+        .eq("buyer_id", user.id)
+        .order("created_at", { ascending: false });
+
       if (orders) {
         const active = orders.filter(o => o.status !== "delivered" && o.status !== "cancelled").length;
         const transit = orders.filter(o => o.status === "shipped").length;
         const spent = orders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
         setStats({ activeOrders: active, inTransit: transit, totalSpent: spent });
+
+        // Get recent 5 orders with seller names
+        const recent = orders.slice(0, 5);
+        if (recent.length > 0) {
+          const sellerIds = [...new Set(recent.map(o => o.seller_id))];
+          const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", sellerIds);
+          const map: Record<string, string> = {};
+          profiles?.forEach(p => { map[p.user_id] = p.full_name || "Unknown Seller"; });
+          setRecentOrders(recent.map(o => ({ ...o, seller_name: map[o.seller_id] || "Unknown Seller" })));
+        }
       }
     };
-    fetchStats();
+    fetchData();
   }, [user]);
 
   const statCards = [
@@ -35,7 +60,8 @@ export default function BuyerDashboard() {
     { label: "Browse Marketplace", icon: Search, href: "/marketplace", gradient: "gradient-buyer", desc: "Discover products" },
     { label: "Track Orders", icon: Truck, href: "/buyer/tracking", gradient: "gradient-seller", desc: "Real-time tracking" },
     { label: "My Orders", icon: Package, href: "/buyer/orders", gradient: "gradient-primary", desc: "Order history" },
-    { label: "Messages", icon: MessageSquare, href: "/buyer/chat", gradient: "gradient-admin", desc: "Chat with sellers" },
+    { label: "Wishlist", icon: Heart, href: "/buyer/wishlist", gradient: "gradient-admin", desc: "Saved items" },
+    { label: "Messages", icon: MessageSquare, href: "/buyer/chat", gradient: "gradient-buyer", desc: "Chat with sellers" },
     { label: "Report Issue", icon: Flag, href: "/buyer/reports", gradient: "gradient-primary", desc: "File a complaint" },
   ];
 
@@ -83,14 +109,31 @@ export default function BuyerDashboard() {
               </Link>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4">
-                  <ShoppingCart className="h-7 w-7 text-muted-foreground" />
+              {recentOrders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4">
+                    <ShoppingCart className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <p className="font-display font-semibold text-foreground">No orders yet</p>
+                  <p className="mt-1 text-sm text-muted-foreground max-w-xs">Start shopping in the marketplace to see your orders here</p>
+                  <Link to="/marketplace" className="mt-4"><Button variant="outline" className="gap-2"><Search className="h-4 w-4" /> Browse Products</Button></Link>
                 </div>
-                <p className="font-display font-semibold text-foreground">No orders yet</p>
-                <p className="mt-1 text-sm text-muted-foreground max-w-xs">Start shopping in the marketplace to see your orders here</p>
-                <Link to="/marketplace" className="mt-4"><Button variant="outline" className="gap-2"><Search className="h-4 w-4" /> Browse Products</Button></Link>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentOrders.map(order => (
+                    <div key={order.id} className="flex items-center justify-between rounded-lg border border-border/60 p-3">
+                      <div>
+                        <p className="font-medium text-sm text-foreground">#{order.id.slice(0, 8)}</p>
+                        <p className="text-xs text-muted-foreground">from {order.seller_name}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-sm text-foreground">${order.total_amount}</span>
+                        <Badge className={`${statusColors[order.status] || ""} capitalize text-xs`}>{order.status}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </AnimatedSection>
