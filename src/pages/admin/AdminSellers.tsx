@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { Users, Search, Store, CheckCircle2, Snowflake, Ban, ShieldCheck, ShieldOff } from "lucide-react";
+import { Users, Search, Store, CheckCircle2, Snowflake, Ban, ShieldCheck, ShieldOff, UserCheck, UserX } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,11 +16,12 @@ interface Seller {
   is_verified: boolean;
   is_banned: boolean;
   is_frozen: boolean;
+  is_approved: boolean;
   created_at: string;
   product_count?: number;
 }
 
-type Tab = "all" | "active" | "frozen" | "banned";
+type Tab = "all" | "pending" | "active" | "frozen" | "banned";
 
 export default function AdminSellers() {
   const { toast } = useToast();
@@ -30,7 +31,6 @@ export default function AdminSellers() {
   const [tab, setTab] = useState<Tab>("all");
 
   const fetchSellers = async () => {
-    // Get all users with seller role
     const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "seller");
     if (!roles || roles.length === 0) { setLoading(false); return; }
     const sellerIds = roles.map(r => r.user_id);
@@ -41,7 +41,6 @@ export default function AdminSellers() {
       .in("user_id", sellerIds);
 
     if (profiles) {
-      // Get product counts
       const { data: products } = await supabase
         .from("products")
         .select("seller_id")
@@ -50,29 +49,42 @@ export default function AdminSellers() {
       const countMap: Record<string, number> = {};
       products?.forEach(p => { countMap[p.seller_id] = (countMap[p.seller_id] || 0) + 1; });
 
-      setSellers(profiles.map(p => ({ ...p, product_count: countMap[p.user_id] || 0 })));
+      setSellers(profiles.map(p => ({
+        ...p,
+        is_approved: (p as any).is_approved ?? false,
+        product_count: countMap[p.user_id] || 0,
+      })));
     }
     setLoading(false);
   };
 
   useEffect(() => { fetchSellers(); }, []);
 
-  const updateSeller = async (userId: string, update: Partial<{ is_verified: boolean; is_frozen: boolean; is_banned: boolean }>) => {
-    const { error } = await supabase.from("profiles").update(update).eq("user_id", userId);
+  const updateSeller = async (userId: string, update: Partial<{ is_verified: boolean; is_frozen: boolean; is_banned: boolean; is_approved: boolean }>) => {
+    const { error } = await supabase.from("profiles").update(update as any).eq("user_id", userId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Seller updated" });
+    const action = update.is_approved !== undefined
+      ? (update.is_approved ? "Seller approved" : "Seller approval revoked")
+      : "Seller updated";
+    toast({ title: action });
     fetchSellers();
   };
 
   const filtered = sellers.filter(s => {
     const matchesSearch = !search || s.full_name?.toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase());
-    const matchesTab = tab === "all" || (tab === "active" && !s.is_frozen && !s.is_banned) || (tab === "frozen" && s.is_frozen) || (tab === "banned" && s.is_banned);
+    const matchesTab =
+      tab === "all" ||
+      (tab === "pending" && !s.is_approved && !s.is_banned) ||
+      (tab === "active" && s.is_approved && !s.is_frozen && !s.is_banned) ||
+      (tab === "frozen" && s.is_frozen) ||
+      (tab === "banned" && s.is_banned);
     return matchesSearch && matchesTab;
   });
 
   const tabs: { label: string; value: Tab; count: number }[] = [
     { label: "All Sellers", value: "all", count: sellers.length },
-    { label: "Active", value: "active", count: sellers.filter(s => !s.is_frozen && !s.is_banned).length },
+    { label: "Pending Approval", value: "pending", count: sellers.filter(s => !s.is_approved && !s.is_banned).length },
+    { label: "Active", value: "active", count: sellers.filter(s => s.is_approved && !s.is_frozen && !s.is_banned).length },
     { label: "Frozen", value: "frozen", count: sellers.filter(s => s.is_frozen).length },
     { label: "Banned", value: "banned", count: sellers.filter(s => s.is_banned).length },
   ];
@@ -82,7 +94,7 @@ export default function AdminSellers() {
       <AnimatedSection variant="fade-up">
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">Manage Sellers</h1>
-          <p className="mt-1 text-muted-foreground">View, verify, freeze, or ban seller accounts</p>
+          <p className="mt-1 text-muted-foreground">Approve, verify, freeze, or ban seller accounts</p>
         </div>
       </AnimatedSection>
 
@@ -146,8 +158,10 @@ export default function AdminSellers() {
                               <Badge variant="destructive">Banned</Badge>
                             ) : seller.is_frozen ? (
                               <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Frozen</Badge>
+                            ) : seller.is_approved ? (
+                              <Badge className="bg-accent/10 text-accent border-accent/20">Approved</Badge>
                             ) : (
-                              <Badge className="bg-accent/10 text-accent border-accent/20">Active</Badge>
+                              <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Pending</Badge>
                             )}
                             {seller.is_verified && (
                               <Badge className="bg-accent/10 text-accent border-accent/20 gap-1"><CheckCircle2 className="h-3 w-3" /> Verified</Badge>
@@ -157,7 +171,16 @@ export default function AdminSellers() {
                         <TableCell>{seller.product_count}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{new Date(seller.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <div className="flex gap-1 justify-end">
+                          <div className="flex gap-1 justify-end flex-wrap">
+                            {!seller.is_approved ? (
+                              <Button size="sm" onClick={() => updateSeller(seller.user_id, { is_approved: true })} className="gap-1 bg-accent hover:bg-accent/90 text-accent-foreground">
+                                <UserCheck className="h-3 w-3" /> Approve
+                              </Button>
+                            ) : (
+                              <Button size="sm" variant="outline" onClick={() => updateSeller(seller.user_id, { is_approved: false })} className="gap-1">
+                                <UserX className="h-3 w-3" /> Revoke
+                              </Button>
+                            )}
                             {!seller.is_verified ? (
                               <Button size="sm" variant="outline" onClick={() => updateSeller(seller.user_id, { is_verified: true })} className="gap-1 text-accent">
                                 <ShieldCheck className="h-3 w-3" /> Verify

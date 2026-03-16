@@ -26,6 +26,8 @@ import AdminSellers from "@/pages/admin/AdminSellers";
 import AdminAds from "@/pages/admin/AdminAds";
 import AdminAnalytics from "@/pages/admin/AdminAnalytics";
 import AdminDisputes from "@/pages/admin/AdminDisputes";
+import AdminProducts from "@/pages/admin/AdminProducts";
+import AdminOrders from "@/pages/admin/AdminOrders";
 
 // Seller
 import SellerDashboard from "@/pages/seller/SellerDashboard";
@@ -91,6 +93,8 @@ function AppRoutes() {
         <Route path="/admin/ads" element={<AdminRoute><AdminAds /></AdminRoute>} />
         <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
         <Route path="/admin/disputes" element={<AdminRoute><AdminDisputes /></AdminRoute>} />
+        <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
+        <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
 
         {/* Seller */}
         <Route path="/seller/dashboard" element={<SellerRoute><SellerDashboard /></SellerRoute>} />
