@@ -26,6 +26,8 @@ import AdminSellers from "@/pages/admin/AdminSellers";
 import AdminAds from "@/pages/admin/AdminAds";
 import AdminAnalytics from "@/pages/admin/AdminAnalytics";
 import AdminDisputes from "@/pages/admin/AdminDisputes";
+import AdminProducts from "@/pages/admin/AdminProducts";
+import AdminOrders from "@/pages/admin/AdminOrders";
 
 // Seller
 import SellerDashboard from "@/pages/seller/SellerDashboard";
