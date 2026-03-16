@@ -16,15 +16,22 @@ export default function SellerDashboard() {
   useEffect(() => {
     if (!user) return;
     const fetchStats = async () => {
-      const [productsRes, pendingRes, ordersRes] = await Promise.all([
+      const [productsRes, ordersRes] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }).eq("seller_id", user.id),
-        supabase.from("products").select("id", { count: "exact", head: true }).eq("seller_id", user.id).eq("status", "active" as any).eq("is_approved" as any, false),
         supabase.from("orders").select("id, total_amount, status").eq("seller_id", user.id),
       ]);
+
+      // Separate query for pending approval count to avoid deep type instantiation
+      const { count: pendingCount } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("seller_id", user.id)
+        .eq("is_approved" as any, false);
+
       const orders = ordersRes.data || [];
       const pending = orders.filter(o => o.status === "pending" || o.status === "processing").length;
       const revenue = orders.filter(o => o.status === "delivered").reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
-      setStats({ products: productsRes.count || 0, pendingApproval: pendingRes.count || 0, pendingOrders: pending, totalRevenue: revenue });
+      setStats({ products: productsRes.count || 0, pendingApproval: pendingCount || 0, pendingOrders: pending, totalRevenue: revenue });
     };
 
     const fetchRecentOrders = async () => {
