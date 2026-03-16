@@ -287,6 +287,7 @@ export type Database = {
           currency: string
           description: string | null
           id: string
+          is_approved: boolean
           price: number
           seller_id: string
           sku: string | null
@@ -302,6 +303,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          is_approved?: boolean
           price?: number
           seller_id: string
           sku?: string | null
@@ -317,6 +319,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          is_approved?: boolean
           price?: number
           seller_id?: string
           sku?: string | null
@@ -342,6 +345,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          is_approved: boolean
           is_banned: boolean
           is_frozen: boolean
           is_verified: boolean
@@ -355,6 +359,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id?: string
+          is_approved?: boolean
           is_banned?: boolean
           is_frozen?: boolean
           is_verified?: boolean
@@ -368,6 +373,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          is_approved?: boolean
           is_banned?: boolean
           is_frozen?: boolean
           is_verified?: boolean
