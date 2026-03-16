@@ -20,6 +20,8 @@ interface NavItem {
 
 const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Products", href: "/admin/products", icon: Package },
+  { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { label: "Sellers", href: "/admin/sellers", icon: Users },
   { label: "Ads", href: "/admin/ads", icon: Megaphone },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },

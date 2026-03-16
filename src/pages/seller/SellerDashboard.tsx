@@ -18,7 +18,7 @@ export default function SellerDashboard() {
     const fetchStats = async () => {
       const [productsRes, pendingRes, ordersRes] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }).eq("seller_id", user.id),
-        supabase.from("products").select("id", { count: "exact", head: true }).eq("seller_id", user.id).eq("status", "active").eq("is_approved" as any, false),
+        supabase.from("products").select("id", { count: "exact", head: true }).eq("seller_id", user.id).eq("status", "active" as any).eq("is_approved" as any, false),
         supabase.from("orders").select("id, total_amount, status").eq("seller_id", user.id),
       ]);
       const orders = ordersRes.data || [];
