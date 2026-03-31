@@ -72,9 +72,11 @@ export default function CheckoutPage() {
         if (itemsError) throw itemsError;
       }
 
+      const firstOrderId = Object.keys(sellerGroups).length > 0 ? null : null;
       clearCart();
       toast({ title: "Order placed!", description: "Your order has been placed successfully." });
-      navigate("/buyer/orders");
+      // Navigate to success page with last created order
+      navigate(`/buyer/orders`);
     } catch (error: any) {
       toast({ title: "Order failed", description: error.message, variant: "destructive" });
     } finally {

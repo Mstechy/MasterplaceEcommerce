@@ -66,6 +66,7 @@ export default function MarketplaceNavbar({ search = "", onSearchChange, showSea
 
         {/* Right side icons */}
         <div className="flex items-center gap-1 shrink-0">
+          <CurrencySelector />
           <ThemeToggle />
 
           {/* Cart */}
