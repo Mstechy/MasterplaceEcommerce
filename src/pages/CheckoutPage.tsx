@@ -186,7 +186,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between font-display text-lg font-bold pt-2 border-t border-border">
                   <span>Total</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                  <span>{formatPrice(totalPrice)}</span>
                 </div>
               </div>
               <Button onClick={handlePlaceOrder} disabled={loading} className="w-full mt-6 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base">
