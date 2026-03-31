@@ -16,6 +16,7 @@ import MarketplacePage from "@/pages/MarketplacePage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import SellerStorePage from "@/pages/SellerStorePage";
 import CheckoutPage from "@/pages/CheckoutPage";
+import OrderSuccessPage from "@/pages/OrderSuccessPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import NotFound from "@/pages/NotFound";

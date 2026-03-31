@@ -21,7 +21,7 @@ export default function AdminDashboard() {
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id, total_amount", { count: "exact" }),
         supabase.from("disputes").select("id", { count: "exact", head: true }).eq("status", "open"),
-        supabase.from("products").select("id", { count: "exact", head: true }).eq("status", "active").eq("is_approved" as any, false),
+        supabase.from("products").select("id", { count: "exact", head: true }).eq("status", "active").eq("is_approved", false),
       ]);
       const revenue = ordersRes.data?.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0) || 0;
       setStats({
