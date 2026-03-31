@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
+  const { formatPrice } = useCurrency();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
