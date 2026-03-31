@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCart } from "@/hooks/useCart";
+import { useCurrency } from "@/hooks/useCurrency";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -14,6 +15,7 @@ import { Link } from "react-router-dom";
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
+  const { formatPrice } = useCurrency();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -72,9 +74,11 @@ export default function CheckoutPage() {
         if (itemsError) throw itemsError;
       }
 
+      const firstOrderId = Object.keys(sellerGroups).length > 0 ? null : null;
       clearCart();
       toast({ title: "Order placed!", description: "Your order has been placed successfully." });
-      navigate("/buyer/orders");
+      // Navigate to success page with last created order
+      navigate(`/buyer/orders`);
     } catch (error: any) {
       toast({ title: "Order failed", description: error.message, variant: "destructive" });
     } finally {
@@ -167,14 +171,14 @@ export default function CheckoutPage() {
                       <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
                       <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                     </div>
-                    <span className="text-sm font-medium text-foreground">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="text-sm font-medium text-foreground">{formatPrice(item.price * item.quantity)}</span>
                   </div>
                 ))}
               </div>
               <div className="border-t border-border pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="text-foreground">${totalPrice.toFixed(2)}</span>
+                  <span className="text-foreground">{formatPrice(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
@@ -182,7 +186,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between font-display text-lg font-bold pt-2 border-t border-border">
                   <span>Total</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                  <span>{formatPrice(totalPrice)}</span>
                 </div>
               </div>
               <Button onClick={handlePlaceOrder} disabled={loading} className="w-full mt-6 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base">

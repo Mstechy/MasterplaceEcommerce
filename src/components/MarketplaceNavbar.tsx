@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import ThemeToggle from "@/components/ThemeToggle";
+import CurrencySelector from "@/components/CurrencySelector";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose
 } from "@/components/ui/sheet";
@@ -65,6 +66,7 @@ export default function MarketplaceNavbar({ search = "", onSearchChange, showSea
 
         {/* Right side icons */}
         <div className="flex items-center gap-1 shrink-0">
+          <CurrencySelector />
           <ThemeToggle />
 
           {/* Cart */}
