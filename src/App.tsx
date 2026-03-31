@@ -83,6 +83,7 @@ function AppRoutes() {
         <Route path="/product/:id" element={<ProductDetailPage />} />
         <Route path="/seller/:id" element={<SellerStorePage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/order-success/:id" element={<OrderSuccessPage />} />
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
 
