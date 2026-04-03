@@ -33,11 +33,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 1. Fetch both at the same time
       // Enhanced role fetch with retry and RPC fallback
       // Simplified role fetch - direct query (RLS allows self-view)
-      // Try RPC first (bypass RLS)
-      const { data: rpcRole } = await supabase.rpc('get_user_role', { _user_id: userId });
-      console.log('[useAuth] RPC role:', rpcRole);
+      // Try RPC first (bypass RLS) with retry for sync delay
+let rpcRole: AppRole | null = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+      const maxWait = 5000; // 5s total
+      const startTime = Date.now();
+      while (retryCount < maxRetries && !rpcRole && (Date.now() - startTime) < maxWait) {
+        const { data } = await supabase.rpc('get_user_role', { _user_id: userId });
+        rpcRole = data as AppRole || null;
+        console.log(`[useAuth] RPC role (attempt ${retryCount + 1}):`, rpcRole);
+        if (!rpcRole) {
+          await new Promise(r => setTimeout(r, 2000)); // 2s wait
+        }
+        retryCount++;
+      }
+      
       if (rpcRole) {
-        setRole(rpcRole as AppRole);
+        setRole(rpcRole);
         // Fetch profile...
         const profileRes = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
         if (profileRes.data) setProfile(profileRes.data);
@@ -54,17 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
       
       if (error) console.error('[useAuth] Direct error:', error.message);
-      
-      const finalRole = roleData?.role as AppRole || 'buyer';
-      console.log('[useAuth] Final role:', finalRole);
 
-
-      // Fetch profile
+      // Fetch profile for fallback
       const profileRes = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
+      const finalRole = roleData?.role as AppRole || 'buyer';
+      console.log('[useAuth] Final role (with profile fallback):', finalRole);
+
       if (profileRes.data) {
         setProfile(profileRes.data);
       }
 
+      setRole(finalRole);
       setLoading(false);
     } catch (e) {
       console.error("Auth Sync Error:", e);
@@ -115,16 +128,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: error.message };
 
     if (data.user) {
-      // Insert role into user_roles table
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({ 
-          user_id: data.user.id, 
-          role: selectedRole 
+      // Insert role using secure RPC (bypasses RLS)
+      const { data: roleInsert, error: roleError } = await supabase
+        .rpc('insert_user_role', { 
+          p_user_id: data.user.id, 
+          p_role: selectedRole 
         });
 
       if (roleError) {
-        console.error("Role insertion error:", roleError);
+        console.error("Role insertion RPC error:", roleError);
+      } else {
+        console.log("[useAuth] Role inserted via RPC:", selectedRole);
       }
     }
 

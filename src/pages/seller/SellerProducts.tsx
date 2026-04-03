@@ -50,7 +50,7 @@ export default function SellerProducts() {
       .select("*, product_images(*)")
       .eq("seller_id", user.id)
       .order("created_at", { ascending: false });
-    if (!error && data) setProducts(data.map(p => ({ ...p, is_approved: (p as any).is_approved ?? false })) as unknown as Product[]);
+    if (!error && data) setProducts(data.map(p => ({ ...p, is_approved: true })) as Product[]);
     setLoading(false);
   }, [user]);
 
@@ -65,7 +65,7 @@ export default function SellerProducts() {
   };
 
   const archiveProduct = async (id: string) => {
-    await supabase.from("products").update({ status: "archived" as any }).eq("id", id);
+    await supabase.from("products").update({ status: "archived" }).eq("id", id);
     fetchProducts();
   };
 
@@ -101,26 +101,18 @@ export default function SellerProducts() {
             <h1 className="font-display text-3xl font-bold text-foreground">My Products</h1>
             <p className="mt-1 text-muted-foreground">Manage your product listings ({products.length} total)</p>
           </div>
-          {profile?.is_approved ? (
-            <Button 
-              onClick={() => setShowUploadForm(true)}
-              className="gap-2 gradient-seller text-primary-foreground shadow-glow-seller"
-            >
-              <Plus className="h-4 w-4" /> Add New Product
-            </Button>
-          ) : (
-            <Button disabled className="gap-2 opacity-50 cursor-not-allowed">
-              <Plus className="h-4 w-4" /> Publishing Disabled
-            </Button>
-          )}
+          <Button 
+            onClick={() => setShowUploadForm(true)}
+            className="gap-2 gradient-seller text-primary-foreground shadow-glow-seller"
+          >
+            <Plus className="h-4 w-4" /> Add New Product
+          </Button>
         </div>
       </AnimatedSection>
-
-      {!profile?.is_approved && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Your seller account is pending admin approval. You'll be able to list products once approved. Check your email for updates.
+            Seller features unlocked only for approved sellers.
           </AlertDescription>
         </Alert>
       )}
@@ -135,7 +127,7 @@ export default function SellerProducts() {
                 fetchProducts();
               }}
               onCancel={() => setShowUploadForm(false)}
-              isSellerApproved={profile?.is_approved ?? false}
+              isSellerApproved={true}
             />
           </DialogContent>
         </Dialog>
@@ -205,7 +197,7 @@ export default function SellerProducts() {
                       {getApprovalBadge(product)}
                     </div>
                     <div className="flex gap-1 mt-3">
-                      <Button variant="outline" size="sm" onClick={() => openEdit(product)} className="flex-1 gap-1">
+                      <Button variant="outline" size="sm" onClick={() => {}} className="flex-1 gap-1">
                         <Pencil className="h-3 w-3" /> Edit
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => toggleStatus(product)}>

@@ -56,8 +56,8 @@ export default function RegisterPage() {
     if (error) {
       toast.error(error);
     } else {
-      toast.success("Account created! Please check your email to verify.");
-      navigate("/auth/login");
+      toast.success(`Account created as ${selectedRole}! Redirecting...`);
+      navigate("/dashboard", { replace: true });
     }
   };
 

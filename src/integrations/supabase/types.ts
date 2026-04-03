@@ -513,6 +513,13 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      },
+      insert_user_role: {
+        Args: {
+          p_user_id: string,
+          p_role: Database["public"]["Enums"]["app_role"]
+        },
+        Returns: boolean
       }
     }
     Enums: {
