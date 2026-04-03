@@ -1,12 +1,12 @@
 # Seller Role & Vercel Fix - TODO
 
 ## Current Steps:
-- [ ] Step 1: Fix SellerProducts.tsx syntax error (line ~118 stray `})`)
-- [ ] Step 2: Remove buyer fallback in useAuth.tsx
-- [ ] Step 3: Update SellerProducts approval logic (enable upload despite pending)
-- [ ] Step 4: Fix Vercel build → git commit/push
+- [x] Step 1: Fix SellerProducts.tsx syntax ✓
+- [x] Step 2: Remove buyer fallback in useAuth.tsx ✓  
+- [x] Step 3: Update SellerProducts approval logic (pending alert, upload enabled) ✓
+- [x] Step 4: Local build success, Vercel push complete ✓
 - [ ] Step 5: Test seller login flow locally
-- [ ] Step 6: Deploy to Vercel
+- [ ] Step 6: Verify Vercel deployment
 
-**Progress: 0/6**
+**Progress: 4/6**
 

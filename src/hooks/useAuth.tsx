@@ -70,14 +70,18 @@ let rpcRole: AppRole | null = null;
 
       // Fetch profile for fallback
       const profileRes = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
-      const finalRole = roleData?.role as AppRole || 'buyer';
-      console.log('[useAuth] Final role (with profile fallback):', finalRole);
+      const finalRole = roleData?.role as AppRole;
+      console.log('[useAuth] Final role (NO BUYER FALLBACK):', finalRole);
 
       if (profileRes.data) {
         setProfile(profileRes.data);
       }
 
-      setRole(finalRole);
+      if (finalRole) {
+        setRole(finalRole);
+      } else {
+        console.error('[useAuth] No role found for user, staying null');
+      }
       setLoading(false);
     } catch (e) {
       console.error("Auth Sync Error:", e);
