@@ -37,8 +37,8 @@ export default function LoginPage() {
     if (error) {
       toast.error(error);
     } else {
-      toast.success("Welcome back!");
-      // Navigation handled by useEffect when user/role state updates
+    toast.success("Welcome back!");
+      navigate("/dashboard", { replace: true }); // Force RoleRedirect
     }
   };
 

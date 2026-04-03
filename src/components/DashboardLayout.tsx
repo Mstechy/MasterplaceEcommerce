@@ -65,7 +65,7 @@ function getRoleGradient(role: string | null) {
 }
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { profile, role, signOut } = useAuth();
+  const { profile, role, signOut, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -137,9 +137,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <div className={`flex h-8 w-8 items-center justify-center rounded-full ${roleGradient} transition-transform group-hover:scale-105`}>
                     <User className="h-4 w-4 text-primary-foreground" />
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-foreground truncate">{profile?.full_name || "User"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{profile?.email}</p>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {loading ? "Syncing..." : (profile?.full_name || "Abiola Tawakalitu")}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {loading ? "Please wait" : (profile?.email || "Admin Access Active")}
+                    </p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>

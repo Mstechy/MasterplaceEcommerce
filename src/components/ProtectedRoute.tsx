@@ -21,9 +21,8 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   if (!user) return <Navigate to="/auth/login" replace />;
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // Redirect to user's own dashboard
-    const dashboardMap = { admin: "/admin/dashboard", seller: "/seller/dashboard", buyer: "/buyer/dashboard" };
-    return <Navigate to={dashboardMap[role] || "/"} replace />;
+    console.warn(`Access denied: user has role "${role}" but route requires one of [${allowedRoles.join(", ")}]`);  
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

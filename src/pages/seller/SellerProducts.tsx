@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Package, Pencil, Trash2, ImagePlus, Eye, EyeOff, Archive, Clock, CheckCircle2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus, Search, Package, Pencil, Trash2, Eye, EyeOff, Archive, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
+import ProductUploadForm from "@/components/ProductUploadForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -35,25 +35,13 @@ interface Product {
 }
 
 export default function SellerProducts() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-
-  // Form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [compareAtPrice, setCompareAtPrice] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [stockQuantity, setStockQuantity] = useState("");
-  const [sku, setSku] = useState("");
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [saving, setSaving] = useState(false);
+  const [showUploadForm, setShowUploadForm] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     if (!user) return;
@@ -66,87 +54,9 @@ export default function SellerProducts() {
     setLoading(false);
   }, [user]);
 
-  const fetchCategories = useCallback(async () => {
-    const { data } = await supabase.from("categories").select("*").order("sort_order");
-    if (data) setCategories(data);
-  }, []);
-
   useEffect(() => {
     fetchProducts();
-    fetchCategories();
-  }, [fetchProducts, fetchCategories]);
-
-  const resetForm = () => {
-    setTitle(""); setDescription(""); setPrice(""); setCompareAtPrice("");
-    setCategoryId(""); setStockQuantity(""); setSku(""); setImageFiles([]);
-    setEditingProduct(null);
-  };
-
-  const openEdit = (product: Product) => {
-    setEditingProduct(product);
-    setTitle(product.title);
-    setDescription(product.description || "");
-    setPrice(String(product.price));
-    setCompareAtPrice(product.compare_at_price ? String(product.compare_at_price) : "");
-    setCategoryId(product.category_id || "");
-    setStockQuantity(String(product.stock_quantity));
-    setSku(product.sku || "");
-    setDialogOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (!user || !title.trim() || !price) return;
-    setSaving(true);
-
-    const productData = {
-      seller_id: user.id,
-      title: title.trim(),
-      description: description.trim() || null,
-      price: parseFloat(price),
-      compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
-      category_id: categoryId || null,
-      stock_quantity: parseInt(stockQuantity) || 0,
-      sku: sku.trim() || null,
-    };
-
-    let productId = editingProduct?.id;
-
-    if (editingProduct) {
-      const { error } = await supabase.from("products").update(productData).eq("id", editingProduct.id);
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); setSaving(false); return; }
-    } else {
-      const { data, error } = await supabase.from("products").insert({ ...productData, status: "active" as any }).select("id").single();
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); setSaving(false); return; }
-      productId = data.id;
-    }
-
-    // Upload images
-    if (imageFiles.length > 0 && productId) {
-      for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i];
-        const ext = file.name.split(".").pop();
-        const filePath = `${user.id}/${productId}/${Date.now()}_${i}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file);
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
-          await supabase.from("product_images").insert({
-            product_id: productId,
-            image_url: urlData.publicUrl,
-            is_primary: i === 0 && !editingProduct,
-          });
-        }
-      }
-    }
-
-    toast({
-      title: editingProduct ? "Product updated" : "Product submitted for approval",
-      description: editingProduct ? undefined : "Your product will be visible on the marketplace once approved by admin.",
-    });
-    resetForm();
-    setDialogOpen(false);
-    setSaving(false);
-    fetchProducts();
-  };
+  }, [fetchProducts]);
 
   const toggleStatus = async (product: Product) => {
     const newStatus = product.status === "active" ? "draft" : "active";
@@ -191,83 +101,55 @@ export default function SellerProducts() {
             <h1 className="font-display text-3xl font-bold text-foreground">My Products</h1>
             <p className="mt-1 text-muted-foreground">Manage your product listings ({products.length} total)</p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 gradient-seller text-primary-foreground shadow-glow-seller">
-                <Plus className="h-4 w-4" /> Add Product
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="font-display">{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
-                {!editingProduct && (
-                  <p className="text-sm text-muted-foreground mt-1">Your product will be reviewed by admin before going live on the marketplace.</p>
-                )}
-              </DialogHeader>
-              <div className="space-y-4 mt-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground">Title *</label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Product name" className="mt-1" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground">Description</label>
-                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your product..." className="mt-1" rows={3} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Price *</label>
-                    <Input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" className="mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Compare at price</label>
-                    <Input type="number" step="0.01" value={compareAtPrice} onChange={(e) => setCompareAtPrice(e.target.value)} placeholder="0.00" className="mt-1" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground">Category</label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select category" /></SelectTrigger>
-                    <SelectContent>
-                      {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Stock</label>
-                    <Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(e.target.value)} placeholder="0" className="mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">SKU</label>
-                    <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Optional" className="mt-1" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground">Product Images</label>
-                  <div className="mt-1 flex items-center gap-3">
-                    <label className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors w-full">
-                      <ImagePlus className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        {imageFiles.length > 0 ? `${imageFiles.length} file${imageFiles.length > 1 ? "s" : ""} selected` : "Choose images..."}
-                      </span>
-                      <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setImageFiles(Array.from(e.target.files || []))} />
-                    </label>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">You can select multiple images. First image will be the primary.</p>
-                </div>
-                <Button onClick={handleSave} disabled={saving || !title.trim() || !price} className="w-full gradient-seller text-primary-foreground">
-                  {saving ? "Saving..." : editingProduct ? "Update Product" : "Submit for Approval"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          {profile?.is_approved ? (
+            <Button 
+              onClick={() => setShowUploadForm(true)}
+              className="gap-2 gradient-seller text-primary-foreground shadow-glow-seller"
+            >
+              <Plus className="h-4 w-4" /> Add New Product
+            </Button>
+          ) : (
+            <Button disabled className="gap-2 opacity-50 cursor-not-allowed">
+              <Plus className="h-4 w-4" /> Publishing Disabled
+            </Button>
+          )}
         </div>
       </AnimatedSection>
+
+      {!profile?.is_approved && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Your seller account is pending admin approval. You'll be able to list products once approved. Check your email for updates.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {showUploadForm && (
+        <Dialog open={showUploadForm} onOpenChange={setShowUploadForm}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <ProductUploadForm
+              userId={user!.id}
+              onSuccess={() => {
+                setShowUploadForm(false);
+                fetchProducts();
+              }}
+              onCancel={() => setShowUploadForm(false)}
+              isSellerApproved={profile?.is_approved ?? false}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       <AnimatedSection variant="fade-up" delay={50}>
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." className="pl-10 h-11" />
+          <Input 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            placeholder="Search products..." 
+            className="pl-10 h-11" 
+          />
         </div>
       </AnimatedSection>
 

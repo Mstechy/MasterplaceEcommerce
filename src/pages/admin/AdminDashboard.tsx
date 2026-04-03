@@ -7,51 +7,113 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+interface DashboardStats {
+  sellers: number;
+  buyers: number;
+  products: number;
+  orders: number;
+  disputes: number;
+  revenue: number;
+  pendingProducts: number;
+}
+
+interface RecentOrder {
+  id: string;
+  status: string;
+  total_amount: number;
+  buyer_name: string;
+  seller_name: string;
+}
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
-  const [stats, setStats] = useState({ sellers: 0, buyers: 0, products: 0, orders: 0, disputes: 0, revenue: 0, pendingProducts: 0 });
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    sellers: 0,
+    buyers: 0,
+    products: 0,
+    orders: 0,
+    disputes: 0,
+    revenue: 0,
+    pendingProducts: 0,
+  });
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchStats = async () => {
-      const [sellersRes, buyersRes, productsRes, ordersRes, disputesRes, pendingRes] = await Promise.all([
-        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "seller"),
-        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "buyer"),
-        supabase.from("products").select("id", { count: "exact", head: true }),
-        supabase.from("orders").select("id, total_amount", { count: "exact" }),
-        supabase.from("disputes").select("id", { count: "exact", head: true }).eq("status", "open"),
-        supabase.from("products").select("id", { count: "exact", head: true }).eq("status", "active").eq("is_approved", false),
-      ]);
-      const revenue = ordersRes.data?.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0) || 0;
-      setStats({
-        sellers: sellersRes.count || 0,
-        buyers: buyersRes.count || 0,
-        products: productsRes.count || 0,
-        orders: ordersRes.count || 0,
-        disputes: disputesRes.count || 0,
-        revenue,
-        pendingProducts: pendingRes.count || 0,
-      });
+      try {
+        setLoading(true);
+        // Role counts via direct query (RLS now allows)
+        const [sellersRes, buyersRes, productsRes, ordersRes, disputesRes, pendingRes] = await Promise.all([
+          supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "seller"),
+          supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "buyer"),
+          supabase.from("products").select("id", { count: "exact", head: true }),
+          supabase.from("orders").select("id, total_amount", { count: "exact", head: true }).limit(100),
+          supabase.from("disputes").select("id", { count: "exact", head: true }).eq("status", "open"),
+          supabase.from("products").select("id", { count: "exact", head: true }).eq("status", "active").eq("is_approved", false),
+        ]);
+        
+        const revenueData = Array.isArray(ordersRes.data) ? ordersRes.data : [];
+        const revenue = revenueData.reduce((sum: number, o: Database['public']['Tables']['orders']['Row']) => sum + Number(o.total_amount || 0), 0);
+        
+        if (isMounted) {
+          setStats({
+            sellers: sellersRes.count || 0,
+            buyers: buyersRes.count || 0,
+            products: productsRes.count || 0,
+            orders: ordersRes.count || 0,
+            disputes: disputesRes.count || 0,
+            revenue,
+            pendingProducts: pendingRes.count || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Admin stats fetch error:', error);
+        if (isMounted) setStats({
+          sellers: 0, buyers: 0, products: 0, orders: 0, disputes: 0, revenue: 0, pendingProducts: 0
+        });
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     };
 
     const fetchRecentOrders = async () => {
-      const { data } = await supabase
-        .from("orders")
-        .select("id, status, total_amount, created_at, buyer_id, seller_id")
-        .order("created_at", { ascending: false })
-        .limit(5);
-      if (data && data.length > 0) {
-        const userIds = [...new Set([...data.map(o => o.buyer_id), ...data.map(o => o.seller_id)])];
-        const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
-        const map: Record<string, string> = {};
-        profiles?.forEach(p => { map[p.user_id] = p.full_name || "Unknown"; });
-        setRecentOrders(data.map(o => ({ ...o, buyer_name: map[o.buyer_id] || "Unknown", seller_name: map[o.seller_id] || "Unknown" })));
+      try {
+        const { data } = await supabase
+          .from("orders")
+          .select("id, status, total_amount, created_at, buyer_id, seller_id")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (data && data.length > 0 && isMounted) {
+          const userIds = [...new Set([...data.map((o: Database['public']['Tables']['orders']['Row']) => o.buyer_id), ...data.map((o: Database['public']['Tables']['orders']['Row']) => o.seller_id)])];
+          const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+          const map: Record<string, string> = {};
+          profiles?.forEach((p: Database['public']['Tables']['profiles']['Row']) => { map[p.user_id] = p.full_name || "Unknown"; });
+          setRecentOrders(data.map((o: Database['public']['Tables']['orders']['Row']) => ({ 
+            id: o.id,
+            status: o.status,
+            total_amount: o.total_amount,
+            buyer_name: map[o.buyer_id] || "Unknown", 
+            seller_name: map[o.seller_id] || "Unknown" 
+          })));
+        }
+      } catch (error) {
+        console.error('Recent orders fetch error:', error);
       }
     };
 
     fetchStats();
     fetchRecentOrders();
+    const interval = setInterval(fetchStats, 30000);
+    
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const statusColors: Record<string, string> = {
@@ -79,6 +141,17 @@ export default function AdminDashboard() {
     { label: "Manage Ads", icon: Megaphone, href: "/admin/ads", gradient: "gradient-primary", desc: "Platform revenue" },
     { label: "Analytics", icon: BarChart3, href: "/admin/analytics", gradient: "gradient-buyer", desc: "Full insights" },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="mt-2 text-sm text-muted-foreground">Loading dashboard stats...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

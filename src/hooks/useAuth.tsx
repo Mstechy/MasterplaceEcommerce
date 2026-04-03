@@ -1,25 +1,16 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { Database } from "@/integrations/supabase/types";
 
 type AppRole = "admin" | "seller" | "buyer";
 
-interface Profile {
-  id: string;
-  user_id: string;
-  email: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  is_verified: boolean;
-  is_banned: boolean;
-  is_frozen: boolean;
-}
+type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  profile: Profile | null;
+  profile: ProfilesRow | null;
   role: AppRole | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: AppRole) => Promise<{ error: string | null }>;
@@ -32,45 +23,77 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<ProfilesRow | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUserData = async (userId: string) => {
+    setLoading(true); 
     try {
-      const [profileRes, roleRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", userId).single(),
-        supabase.from("user_roles").select("role").eq("user_id", userId).limit(1).single(),
-      ]);
-      if (profileRes.data) setProfile(profileRes.data as Profile);
-      if (roleRes.data) setRole(roleRes.data.role as AppRole);
+      // 1. Fetch both at the same time
+      // Enhanced role fetch with retry and RPC fallback
+      // Simplified role fetch - direct query (RLS allows self-view)
+      // Try RPC first (bypass RLS)
+      const { data: rpcRole } = await supabase.rpc('get_user_role', { _user_id: userId });
+      console.log('[useAuth] RPC role:', rpcRole);
+      if (rpcRole) {
+        setRole(rpcRole as AppRole);
+        // Fetch profile...
+        const profileRes = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
+        if (profileRes.data) setProfile(profileRes.data);
+        setLoading(false);
+        return;
+      }
+
+      // Fallback direct
+      console.log('[useAuth] RPC failed, direct query for user_id:', userId);
+      const { data: roleData, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .single();
+      
+      if (error) console.error('[useAuth] Direct error:', error.message);
+      
+      const finalRole = roleData?.role as AppRole || 'buyer';
+      console.log('[useAuth] Final role:', finalRole);
+
+
+      // Fetch profile
+      const profileRes = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+      }
+
+      setLoading(false);
     } catch (e) {
-      console.error("Error fetching user data:", e);
+      console.error("Auth Sync Error:", e);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      async (event, currentSession) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
 
-        if (session?.user) {
-          // Use setTimeout to avoid Supabase client deadlock
-          setTimeout(() => fetchUserData(session.user.id), 0);
+        if (currentSession?.user) {
+          fetchUserData(currentSession.user.id);
         } else {
           setProfile(null);
           setRole(null);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      if (currentSession?.user) {
+        fetchUserData(currentSession.user.id);
       } else {
         setLoading(false);
       }
@@ -91,12 +114,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) return { error: error.message };
 
-    // Insert role for the user
     if (data.user) {
+      // Insert role into user_roles table
       const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({ user_id: data.user.id, role: selectedRole });
-      if (roleError) return { error: roleError.message };
+        .from('user_roles')
+        .insert({ 
+          user_id: data.user.id, 
+          role: selectedRole 
+        });
+
+      if (roleError) {
+        console.error("Role insertion error:", roleError);
+      }
     }
 
     return { error: null };
@@ -120,7 +149,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ user, session, profile, role, loading, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
-  );
+    );
+
 }
 
 export function useAuth() {
@@ -128,3 +158,4 @@ export function useAuth() {
   if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 }
+

@@ -51,7 +51,7 @@ export default function AdminSellers() {
 
       setSellers(profiles.map(p => ({
         ...p,
-        is_approved: (p as any).is_approved ?? false,
+        is_approved: (p.is_approved !== undefined && p.is_approved !== null) ? p.is_approved : false,
         product_count: countMap[p.user_id] || 0,
       })));
     }
@@ -61,7 +61,7 @@ export default function AdminSellers() {
   useEffect(() => { fetchSellers(); }, []);
 
   const updateSeller = async (userId: string, update: Partial<{ is_verified: boolean; is_frozen: boolean; is_banned: boolean; is_approved: boolean }>) => {
-    const { error } = await supabase.from("profiles").update(update as any).eq("user_id", userId);
+    const { error } = await supabase.from("profiles").update(update).eq("user_id", userId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     const action = update.is_approved !== undefined
       ? (update.is_approved ? "Seller approved" : "Seller approval revoked")
