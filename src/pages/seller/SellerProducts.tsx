@@ -50,7 +50,7 @@ export default function SellerProducts() {
       .select("*, product_images(*)")
       .eq("seller_id", user.id)
       .order("created_at", { ascending: false });
-    if (!error && data) setProducts(data.map(p => ({ ...p, is_approved: true })) as Product[]);
+    if (!error && data) setProducts(data);
     setLoading(false);
   }, [user]);
 
@@ -109,10 +109,12 @@ export default function SellerProducts() {
           </Button>
         </div>
       </AnimatedSection>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+
+      {!profile?.is_approved && (
+        <Alert variant="default">
+          <Clock className="h-4 w-4" />
           <AlertDescription>
-            Seller features unlocked only for approved sellers.
+            Your seller account is pending admin approval. You can still create draft products.
           </AlertDescription>
         </Alert>
       )}
