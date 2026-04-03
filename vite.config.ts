@@ -25,12 +25,10 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
-          ui: ['class-variance-authority', 'clsx', 'tailwind-merge', '@radix-ui'],
-          'admin-pages': ['@/pages/admin'],
-          'seller-pages': ['@/pages/seller'],
-          'buyer-pages': ['@/pages/buyer'],
+          ui: ['class-variance-authority', 'clsx', 'tailwind-merge'],
         },
       },
     },
   },
-})); 
+}));
+
